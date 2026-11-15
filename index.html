@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dziennik">
+<meta name="theme-color" content="#1C1C1E">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Dziennik</title>
+<style>
+:root{--bg:#1C1C1E;--card:#2A2A2D;--card2:#36363A;--line:#3A3A3E;--tx:#F2F2F4;--tx2:#A1A1A8;--tx3:#6E6E75;--warn:#E5675A;
+--st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;height:100%;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea,select{font:inherit;font-size:16px;color:var(--tx);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;width:100%;-webkit-appearance:none;appearance:none}
+input[type=color]{padding:2px;height:40px;width:52px}
+textarea{resize:none}
+.num{font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+/* lock */
+#lock{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding-top:var(--st)}
+.lockin{display:flex;flex-direction:column;align-items:center;gap:16px}
+.logo{width:76px;height:76px;border-radius:20px;background:linear-gradient(135deg,#3A3A40,#24242A);display:flex;align-items:center;justify-content:center}
+.logo i{width:30px;height:30px;border:3px solid var(--tx2);border-radius:50%;border-right-color:transparent;transform:rotate(45deg)}
+#lockTitle{color:var(--tx2);font-size:15px}
+#lockMsg{min-height:16px;font-size:12px;color:var(--warn)}
+.dots{display:flex;gap:14px;min-height:12px}.dots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--tx2)}.dots i.f{background:var(--tx2)}
+.pad{display:grid;grid-template-columns:repeat(3,72px);gap:16px}
+.pad button{height:72px;border-radius:50%;background:var(--card);font-size:26px}
+.pad button:active{background:var(--card2)}
+.pad .x{background:none;font-size:18px;color:var(--tx2)}
+/* app */
+#app{min-height:100%;display:flex;flex-direction:column}
+#view{flex:1;padding:calc(var(--st) + 8px) 16px calc(var(--sb) + 90px)}
+.tab{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;border-top:1px solid var(--line);background:rgba(28,28,30,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:8px 0 calc(var(--sb) + 8px);z-index:5}
+.tab button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--tx3);min-width:58px}
+.tab button.on{color:var(--tx)}
+.ti{width:20px;height:20px;border-radius:6px;border:1.6px solid currentColor}
+.tab button.on .ti{background:currentColor}
+.hdr{display:flex;justify-content:space-between;align-items:center;margin:8px 0 14px}
+.hdr b{font-size:26px;font-weight:700}
+.hdr span{color:var(--tx2);font-size:13px;display:flex;align-items:center;gap:6px}
+.sym{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:700;flex:0 0 auto}
+.sym.s{min-width:22px;height:22px;font-size:11px;border-radius:7px}
+.sym.xs{min-width:18px;height:18px;font-size:10px;border-radius:5px;vertical-align:-4px}
+.active{background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px}
+.active.over{outline:1.5px solid var(--warn)}
+.active .top{display:flex;align-items:center;gap:10px}
+.active .t{font-size:28px;font-weight:600;flex:1}
+.stop{background:var(--card2);border-radius:12px;padding:8px 14px;font-size:14px;font-weight:600}
+.bar{height:5px;background:var(--card2);border-radius:3px;margin:12px 0 6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;transition:width .5s}
+.bar i.over{background:var(--warn)!important}
+.meta{font-size:12px;color:var(--tx2);display:flex;justify-content:space-between;margin-top:4px}
+.warn{color:var(--warn)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 18px}
+.btn{background:var(--card);border-radius:18px;height:84px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:12px;text-align:left}
+.btn:active{background:var(--card2)}
+.btn.on{outline:1.5px solid var(--line)}
+.btn small{font-size:12px;color:var(--tx2)}
+.sec{font-size:12px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin:14px 0 8px}
+.rowsec{display:flex;justify-content:space-between;align-items:center}
+.add{color:var(--tx);background:var(--card);border-radius:10px;padding:6px 10px;font-size:13px;text-transform:none;letter-spacing:0}
+.li{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px;width:100%;text-align:left}
+.li>span:not(.sym){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.li em{font-style:normal;color:var(--tx2);font-size:13px}
+.li small.sub{display:block;color:var(--tx3);font-size:12px}
+.empty{color:var(--tx3);font-size:13px;padding:10px 0}
+.seg{display:flex;background:var(--card);border-radius:10px;padding:3px;margin-bottom:12px;font-size:13px}
+.seg button{flex:1;text-align:center;padding:7px 0;border-radius:8px;color:var(--tx2);font-weight:600}
+.seg button.on{background:var(--card2);color:var(--tx)}
+.nav{font-size:20px;padding:0 8px;color:var(--tx)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px}
+.cal .h{color:var(--tx3);padding-bottom:4px}
+.cal .d{height:42px;border-radius:10px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.cal .d.today{outline:1.5px solid var(--tx2)}
+.cal .d.sel{background:var(--card2);outline:1.5px solid var(--tx)}
+.cal .d.fut{opacity:.4}
+.pips{display:flex;gap:2px;height:5px}.pips i{width:5px;height:5px;border-radius:50%}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--card);border-radius:14px;padding:10px 12px}
+.kpi small{font-size:11px;color:var(--tx2);display:block}
+.kpi b{font-size:21px;font-weight:600}
+.heat{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;background:var(--card);border-radius:14px;padding:10px}
+.heat i{border-radius:2px}
+.bars{display:flex;align-items:flex-end;gap:5px;height:80px;background:var(--card);border-radius:14px 14px 0 0;padding:10px 12px 0}
+.bars div{flex:1;border-radius:3px 3px 0 0;min-height:2px}
+.bl{display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);padding:4px 12px 8px;background:var(--card);border-radius:0 0 14px 14px}
+.bl span{flex:1;text-align:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--tx3);font-weight:500;font-size:11px}
+td.r,th.r{text-align:right}
+.card{background:var(--card);border-radius:14px;padding:12px;margin-bottom:10px}
+.setrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.setrow label{font-size:11px;color:var(--tx2);display:flex;flex-direction:column;gap:4px}
+.setrow .grow{flex:1}
+.setbtn{display:block;width:100%;text-align:left;padding:13px 12px;background:var(--card);border-radius:12px;margin-bottom:8px;font-size:15px}
+.setbtn.danger{color:var(--warn)}
+.info{font-size:12px;color:var(--tx3);line-height:1.5;margin-top:10px}
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:20}
+#sheet .dim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;overflow:auto;background:#242427;border-radius:22px 22px 0 0;padding:10px 16px calc(var(--sb) + 20px)}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+.sheet h3{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.sub2{font-size:13px;color:var(--tx2);margin-top:6px}
+.f{font-size:11px;color:var(--tx3);margin:14px 0 6px;display:block;letter-spacing:.4px}
+.two{display:grid;grid-template-columns:1fr;gap:0}.two input,input[type=datetime-local]{min-width:0;max-width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--card);border-radius:10px;padding:8px 12px;font-size:13px}
+.chip.on{background:var(--card2);outline:1.5px solid var(--tx2)}
+.chip.ro{color:var(--tx2)}
+.hint{font-size:12px;color:var(--tx3)}
+.stars{display:flex;gap:8px}.stars button{width:38px;height:38px;border-radius:10px;background:var(--card)}
+.stars button.on{background:#E0A458}
+.err{color:var(--warn);font-size:13px;min-height:18px;margin-top:10px}
+.save{display:block;width:100%;margin-top:6px;background:var(--tx);color:#111;border-radius:14px;padding:14px;font-weight:600;font-size:15px}
+.row2{display:flex;justify-content:space-between;margin-top:12px}
+.link{color:var(--tx2);font-size:14px;padding:6px 0}
+.link.danger{color:var(--warn)}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+/* misc */
+#toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+#busy{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx2)}
+body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:100}
+</style>
+</head>
+<body>
+
+<div id="lock" hidden>
+  <div class="lockin">
+    <div class="logo"><i></i></div>
+    <div id="lockTitle">Dziennik</div>
+    <div class="dots" id="dots"></div>
+    <div id="lockMsg"></div>
+    <div class="pad">
+      <button data-act="pin" data-v="1">1</button><button data-act="pin" data-v="2">2</button><button data-act="pin" data-v="3">3</button>
+      <button data-act="pin" data-v="4">4</button><button data-act="pin" data-v="5">5</button><button data-act="pin" data-v="6">6</button>
+      <button data-act="pin" data-v="7">7</button><button data-act="pin" data-v="8">8</button><button data-act="pin" data-v="9">9</button>
+      <button class="x" data-act="pin" data-v="del">⌫</button><button data-act="pin" data-v="0">0</button><button class="x" data-act="pin" data-v="ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <main id="view"></main>
+  <nav class="tab">
+    <button data-act="tab" data-tab="now"><i class="ti"></i>Teraz</button>
+    <button data-act="tab" data-tab="hist"><i class="ti"></i>Historia</button>
+    <button data-act="tab" data-tab="stat"><i class="ti"></i>Statystyki</button>
+    <button data-act="tab" data-tab="items"><i class="ti"></i>Przedmioty</button>
+    <button data-act="tab" data-tab="set"><i class="ti"></i>Ustawienia</button>
+  </nav>
+</div>
+
+<div id="sheet" hidden><div class="dim"></div><div class="sheet"></div></div>
+<div id="toast"></div>
+<div id="busy" hidden>Szyfrowanie…</div>
+<input type="file" id="impf" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+const CATS=['R','P','D','E'], SESS=['R','P','D'];
+const DEF={R:{alias:'R',color:'#E0A458',limit:null},P:{alias:'P',color:'#6C7BD9',limit:null},D:{alias:'D',color:'#7FAE8E',limit:null},E:{alias:'E',color:'#C47A8A',limit:null}};
+const ITER=600000;
+const te=new TextEncoder(), td=new TextDecoder();
+let S=null, KEY=null, META=null, BOX=null, tab='now', hiddenAt=0, tick=null, saving=Promise.resolve();
+let pin='', mode='unlock', firstPin='', busyOn=false;
+const hist={y:0,m:0,day:null,filter:null};
+const stat={cat:'E',range:30};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,9);
+const pad2=n=>String(n).padStart(2,'0');
+const DN=['niedz.','pon.','wt.','śr.','czw.','pt.','sob.'];
+const MN=['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia','września','października','listopada','grudnia'];
+const MNOM=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+function hms(ms){ms=Math.max(0,ms);const s=Math.floor(ms/1000);return `${pad2(Math.floor(s/3600))}:${pad2(Math.floor(s%3600/60))}:${pad2(s%60)}`;}
+function dur(ms){const m=Math.round(Math.max(0,ms)/60000);if(m<60)return m+' min';const h=Math.floor(m/60);if(h<48)return `${h} h ${pad2(m%60)} min`;return `${Math.floor(h/24)} d ${h%24} h`;}
+function hm(ts){const d=new Date(ts);return pad2(d.getHours())+':'+pad2(d.getMinutes());}
+function dayKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function rel(ts){const k=dayKey(ts),t=dayKey(Date.now()),y=dayKey(Date.now()-864e5),d=new Date(ts);return (k===t?'dziś':k===y?'wczoraj':`${d.getDate()} ${MN[d.getMonth()]}`)+' '+hm(ts);}
+function toInput(ts){const d=new Date(ts);return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;}
+function fromInput(v){if(!v)return null;const t=new Date(v).getTime();return isNaN(t)?null:t;}
+const fnum=(x,d=1)=>x.toFixed(d).replace('.',',');
+function txtOn(hex){const n=parseInt(hex.slice(1),16);return (0.299*(n>>16)+0.587*(n>>8&255)+0.114*(n&255))>150?'#111':'#fff';}
+function sym(c,cls=''){const k=S.cats[c];return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
+const alias=c=>esc(S.cats[c].alias||c);
+const itemName=id=>(S.items.find(i=>i.id===id)||{}).alias||'';
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
+function busy(on,txt){busyOn=on;$('#busy').hidden=!on;if(txt)$('#busy').textContent=txt;}
+
+/* ---------- storage + crypto ---------- */
+const idb=(()=>{let p;const db=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('dz',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));
+  const tx=(m,fn)=>db().then(d=>new Promise((res,rej)=>{const t=d.transaction('kv',m);const r=fn(t.objectStore('kv'));t.oncomplete=()=>res(r.result);t.onerror=()=>rej(t.error);}));
+  return{get:k=>tx('readonly',s=>s.get(k)),set:(k,v)=>tx('readwrite',s=>s.put(v,k)),del:k=>tx('readwrite',s=>s.delete(k))};})();
+function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
+function unb64(s){const bin=atob(s),b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b;}
+async function derive(pass,salt,iter){const base=await crypto.subtle.importKey('raw',te.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+async function seal(key,str){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,te.encode(str));return{iv:b64(iv),ct:b64(ct)};}
+async function unseal(key,box){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(box.iv)},key,unb64(box.ct));return JSON.parse(td.decode(pt));}
+const persist=()=>idb.set('vault',{salt:META.salt,iter:META.iter,fails:META.fails||0,wipe:META.wipe,iv:BOX&&BOX.iv,ct:BOX&&BOX.ct});
+function save(){if(!S||!KEY)return saving;const snap=JSON.stringify(S),key=KEY;saving=saving.then(async()=>{BOX=await seal(key,snap);await persist();}).catch(()=>toast('Błąd zapisu'));return saving;}
+function newState(){return{v:1,cats:JSON.parse(JSON.stringify(DEF)),items:[],sessions:[],events:[],settings:{autolock:60}};}
+function migrate(){
+  S.cats=S.cats||{};
+  for(const c of CATS){const k=S.cats[c]=Object.assign({},DEF[c],S.cats[c]||{});if(!/^#[0-9a-fA-F]{6}$/.test(k.color))k.color=DEF[c].color;k.alias=String(k.alias||c).slice(0,12);k.limit=(+k.limit>0)?Math.round(+k.limit):null;}
+  S.items=(Array.isArray(S.items)?S.items:[]).filter(i=>i&&SESS.includes(i.cat));
+  S.sessions=(Array.isArray(S.sessions)?S.sessions:[]).filter(s=>s&&SESS.includes(s.cat)&&s.start);
+  S.events=(Array.isArray(S.events)?S.events:[]).filter(e=>e&&e.at);
+  S.settings=Object.assign({autolock:60},S.settings||{});
+}
+
+/* ---------- lock ---------- */
+function renderLock(msg){
+  $('#lockTitle').textContent=mode==='setup1'?'Ustaw PIN (4–8 cyfr, zalecane 6+)':mode==='setup2'?'Powtórz PIN':'Dziennik';
+  $('#lockMsg').textContent=msg||'';
+  $('#dots').innerHTML=Array.from({length:Math.max(4,pin.length)},(_,i)=>`<i class="${i<pin.length?'f':''}"></i>`).join('');
+}
+function showLock(msg){S=null;KEY=null;clearInterval(tick);closeSheet();$('#app').hidden=true;$('#lock').hidden=false;pin='';renderLock(msg);}
+function lock(){if(!S)return;mode=META?'unlock':'setup1';showLock();}
+function enterApp(){$('#lock').hidden=true;$('#app').hidden=false;tab='now';render();clearInterval(tick);tick=setInterval(updateLive,1000);}
+async function submitPin(){
+  if(pin.length<4){renderLock('Minimum 4 cyfry');return;}
+  if(mode==='setup1'){firstPin=pin;mode='setup2';pin='';renderLock();return;}
+  if(mode==='setup2'){
+    if(pin!==firstPin){mode='setup1';pin='';renderLock('PIN-y się różnią');return;}
+    busy(true,'Tworzenie klucza…');
+    const salt=crypto.getRandomValues(new Uint8Array(16));
+    META={salt:b64(salt),iter:ITER,fails:0,wipe:10};
+    KEY=await derive(pin,salt,ITER);S=newState();pin='';firstPin='';
+    await save();busy(false);enterApp();return;
+  }
+  busy(true,'Odszyfrowywanie…');
+  try{
+    const key=await derive(pin,unb64(META.salt),META.iter);
+    S=await unseal(key,BOX);KEY=key;migrate();
+    if(META.fails){META.fails=0;await persist();}
+    pin='';busy(false);enterApp();
+  }catch(e){
+    S=null;KEY=null;META.fails=(META.fails||0)+1;pin='';
+    if(META.wipe&&META.fails>=META.wipe){await idb.del('vault');META=null;BOX=null;mode='setup1';busy(false);renderLock('Dane usunięte po zbyt wielu próbach');return;}
+    await persist();busy(false);renderLock(`Błędny PIN (${META.fails}${META.wipe?' / '+META.wipe:''})`);
+  }
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.querySelectorAll('.tab button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  ({now:renderNow,hist:renderHist,stat:renderStats,items:renderItems,set:renderSet})[tab]();
+}
+function allEntries(){
+  return [...S.sessions.map(s=>({k:'s',id:s.id,cat:s.cat,t:s.start,o:s})),...S.events.map(e=>({k:'e',id:e.id,cat:'E',t:e.at,o:e}))].sort((a,b)=>b.t-a.t);
+}
+function entryLine(en,tf){
+  const o=en.o;let m;
+  if(en.k==='s'){m=o.end?dur(o.end-o.start):'trwa';const it=itemName(o.itemId);if(it)m+=' · '+esc(it);}
+  else{m='Zdarzenie';if(o.tag)m+=' · '+esc(o.tag);if(o.sessionId){const s=S.sessions.find(x=>x.id===o.sessionId);if(s)m+=' · w '+alias(s.cat);}}
+  if(o.rating)m+=' · ★'+o.rating;
+  if(o.note)m+=' · ✎';
+  return `<button class="li" data-act="edit" data-k="${en.k}" data-id="${en.id}">${sym(en.cat,'s')}<span class="num">${m}</span><em class="num">${tf(en.t)}</em></button>`;
+}
+
+function renderNow(){
+  const act=S.sessions.filter(s=>!s.end).sort((a,b)=>a.start-b.start),d=new Date();
+  let h=`<div class="hdr"><b>Teraz</b><span>${DN[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}</span></div>`;
+  for(const s of act){
+    const k=S.cats[s.cat],lim=k.limit,it=itemName(s.itemId);
+    h+=`<div class="active"><div class="top">${sym(s.cat)}<span class="t num" data-start="${s.start}">${hms(Date.now()-s.start)}</span><button class="stop" data-act="stop" data-id="${s.id}">Stop</button></div>`;
+    if(lim)h+=`<div class="bar"><i data-bar="${s.start}" data-lim="${lim}" style="background:${k.color}"></i></div><div class="meta"><span data-barlbl="${s.start}" data-lim="${lim}"></span><span class="num">próg ${dur(lim*60000)}</span></div>`;
+    h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div></div>`;
+  }
+  h+='<div class="grid">';
+  for(const c of CATS){
+    const a=act.find(s=>s.cat===c);
+    const sub=c==='E'?'zapisz teraz':a?'trwa · zakończ':'start';
+    h+=`<button class="btn${a?' on':''}" data-act="${c==='E'?'event':a?'stop':'start'}" data-cat="${c}"${a?` data-id="${a.id}"`:''}>${sym(c)}<small>${sub}</small></button>`;
+  }
+  h+='</div>';
+  const rec=allEntries().filter(e=>!(e.k==='s'&&!e.o.end)).slice(0,6);
+  h+='<div class="sec">Ostatnie</div>'+(rec.length?rec.map(e=>entryLine(e,rel)).join(''):'<div class="empty">Brak wpisów</div>');
+  $('#view').innerHTML=h;updateLive();
+}
+function updateLive(){
+  if(!S||tab!=='now')return;const now=Date.now();
+  document.querySelectorAll('[data-start]').forEach(el=>el.textContent=hms(now-+el.dataset.start));
+  document.querySelectorAll('[data-bar]').forEach(el=>{const e=now-+el.dataset.bar,L=+el.dataset.lim*60000;el.style.width=Math.min(100,e/L*100)+'%';el.classList.toggle('over',e>L);});
+  document.querySelectorAll('[data-barlbl]').forEach(el=>{const e=now-+el.dataset.barlbl,L=+el.dataset.lim*60000;el.innerHTML=e<L?`do progu <b class="num">${hms(L-e)}</b>`:`<b class="warn num">ponad próg o ${hms(e-L)}</b>`;el.closest('.active').classList.toggle('over',e>L);});
+}
+
+function renderHist(){
+  if(!hist.y){const d=new Date();hist.y=d.getFullYear();hist.m=d.getMonth();hist.day=dayKey(Date.now());}
+  const f=hist.filter,ents=allEntries().filter(e=>!f||e.cat===f),byDay={};
+  for(const e of ents){(byDay[dayKey(e.t)]=byDay[dayKey(e.t)]||new Set()).add(e.cat);}
+  let h=`<div class="hdr"><b>${MNOM[hist.m]}</b><span><button class="nav" data-act="hm" data-v="-1">‹</button>${hist.y}<button class="nav" data-act="hm" data-v="1">›</button></span></div>`;
+  h+=`<div class="seg"><button class="${!f?'on':''}" data-act="hf" data-v="">Wszystko</button>${CATS.map(c=>`<button class="${f===c?'on':''}" data-act="hf" data-v="${c}" style="color:${S.cats[c].color}">${alias(c)}</button>`).join('')}</div>`;
+  h+='<div class="cal">'+['pn','wt','śr','cz','pt','sb','nd'].map(x=>`<div class="h">${x}</div>`).join('');
+  const off=(new Date(hist.y,hist.m,1).getDay()+6)%7,days=new Date(hist.y,hist.m+1,0).getDate(),today=dayKey(Date.now());
+  for(let i=0;i<off;i++)h+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const k=`${hist.y}-${pad2(hist.m+1)}-${pad2(d)}`,cs=byDay[k]?[...byDay[k]].sort((a,b)=>CATS.indexOf(a)-CATS.indexOf(b)):[];
+    h+=`<button class="d${k===today?' today':''}${k===hist.day?' sel':''}${k>today?' fut':''}" data-act="hd" data-v="${k}"><span>${d}</span><span class="pips">${cs.map(c=>`<i style="background:${S.cats[c].color}"></i>`).join('')}</span></button>`;
+  }
+  h+='</div>';
+  const [yy,mm,dd]=hist.day.split('-').map(Number),sd=new Date(yy,mm-1,dd);
+  const sel=ents.filter(e=>dayKey(e.t)===hist.day);
+  h+=`<div class="sec rowsec"><span>${DN[sd.getDay()]} ${dd} ${MN[mm-1]}</span><button class="add" data-act="addEntry">+ Dodaj</button></div>`;
+  h+=sel.length?sel.map(e=>entryLine(e,hm)).join(''):'<div class="empty">Brak wpisów</div>';
+  $('#view').innerHTML=h;
+}
+
+function renderStats(){
+  const c=stat.cat,isS=c!=='E',now=Date.now();
+  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:s.end-s.start,r:s.rating,item:s.itemId})):S.events.map(e=>({t:e.at,r:e.rating}))).sort((a,b)=>a.t-b.t);
+  const from=stat.range?now-stat.range*864e5:(all.length?all[0].t:now);
+  const L=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=L.length;
+  const rated=L.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
+  const cur=all.length?now-all[all.length-1].t:null;
+  let longest=0;for(let i=1;i<L.length;i++)longest=Math.max(longest,L[i].t-L[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
+  let h=`<div class="hdr"><b>Statystyki</b></div>`;
+  h+=`<div class="seg">${CATS.map(x=>`<button class="${x===c?'on':''}" data-act="sc" data-v="${x}" style="color:${S.cats[x].color}">${alias(x)}</button>`).join('')}</div>`;
+  h+=`<div class="seg">${[[30,'30 dni'],[90,'90 dni'],[365,'rok'],[0,'całość']].map(([v,l])=>`<button class="${stat.range===v?'on':''}" data-act="sr" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const K=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
+  h+='<div class="kpis">'+K('liczba',n)+K('na tydzień',fnum(n/(days/7)));
+  if(isS){const ds=L.map(x=>x.d).sort((a,b)=>a-b),tot=ds.reduce((s,x)=>s+x,0),med=ds.length?(ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2):0;
+    h+=K('łączny czas',n?dur(tot):'—')+K('mediana sesji',n?dur(med):'—')+K('najdłuższa sesja',n?dur(ds[ds.length-1]):'—')+K('średnio / tydzień',n?dur(tot/(days/7)):'—');}
+  h+=K('od ostatniego',cur!=null?dur(cur):'—')+K('najdłuższa przerwa',n?dur(longest):'—')+K('średnia ocena',avgR?fnum(avgR):'—')+'</div>';
+  // heatmap: 17 tygodni, kolumny = tygodnie (pn–nd)
+  const cnt={};for(const x of all){const k=dayKey(x.t);cnt[k]=(cnt[k]||0)+1;}
+  const t0=new Date();t0.setHours(12,0,0,0);t0.setDate(t0.getDate()-(t0.getDay()+6)%7-16*7);
+  const col=S.cats[c].color,todayK=dayKey(now);
+  h+='<div class="sec">Ostatnie 17 tygodni</div><div class="heat">';
+  for(let i=0;i<17*7;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);const k=dayKey(dt.getTime()),v=cnt[k]||0;
+    h+=k>todayK?'<i></i>':`<i style="background:${v?col:'#36363A'};opacity:${v?[0,.45,.75,1][Math.min(3,v)]:1}"></i>`;}
+  h+='</div>';
+  const dow=Array(7).fill(0),hr=Array(24).fill(0);for(const x of L){const d=new Date(x.t);dow[(d.getDay()+6)%7]++;hr[d.getHours()]++;}
+  const bars=(arr,labels)=>{const mx=Math.max(1,...arr);return `<div class="bars">${arr.map(v=>`<div style="height:${v/mx*100}%;background:${col}"></div>`).join('')}</div><div class="bl">${labels.map(l=>`<span>${l}</span>`).join('')}</div>`;};
+  h+='<div class="sec">Dzień tygodnia</div>'+bars(dow,['pn','wt','śr','cz','pt','sb','nd']);
+  h+='<div class="sec">Godzina rozpoczęcia</div>'+bars(hr,hr.map((_,i)=>i%6===0?i:''));
+  if(isS){
+    const g={};for(const x of L){const k=x.item||'';(g[k]=g[k]||{n:0,t:0,r:[]}).n++;g[k].t+=x.d;if(x.r)g[k].r.push(x.r);}
+    const rows=Object.entries(g).sort((a,b)=>b[1].n-a[1].n);
+    if(rows.length){h+='<div class="sec">Przedmioty</div><div class="card"><table><tr><th>przedmiot</th><th class="r">×</th><th class="r">czas</th><th class="r">★</th></tr>';
+      for(const [id,v] of rows)h+=`<tr><td>${esc(itemName(id)||'—')}</td><td class="r num">${v.n}</td><td class="r num">${dur(v.t)}</td><td class="r num">${v.r.length?fnum(v.r.reduce((a,b)=>a+b,0)/v.r.length):'—'}</td></tr>`;
+      h+='</table></div>';}
+  }
+  $('#view').innerHTML=h;
+}
+
+function renderItems(){
+  let h=`<div class="hdr"><b>Przedmioty</b><span><button class="add" data-act="addItem">+ Dodaj</button></span></div>`;
+  for(const c of SESS){
+    const its=S.items.filter(i=>i.cat===c);
+    h+=`<div class="sec">${sym(c,'xs')} ${alias(c)}</div>`;
+    h+=its.length?its.map(i=>{const n=S.sessions.filter(s=>s.itemId===i.id).length;return `<button class="li" data-act="editItem" data-id="${i.id}"><span>${esc(i.alias)}<small class="sub">${[i.material,i.size].filter(Boolean).map(esc).join(' · ')}</small></span><em class="num">${n}×</em></button>`;}).join(''):'<div class="empty">—</div>';
+  }
+  $('#view').innerHTML=h;
+}
+
+function renderSet(){
+  let h=`<div class="hdr"><b>Ustawienia</b></div><div class="sec">Kategorie</div><div class="card">`;
+  for(const c of CATS){const k=S.cats[c];
+    h+=`<div class="setrow">${sym(c)}<label class="grow">nazwa<input type="text" maxlength="12" value="${esc(k.alias)}" data-set="alias" data-cat="${c}"></label><label>kolor<input type="color" value="${k.color}" data-set="color" data-cat="${c}"></label>${c!=='E'?`<label style="width:84px">próg (min)<input type="number" inputmode="numeric" min="0" value="${k.limit||''}" placeholder="brak" data-set="limit" data-cat="${c}"></label>`:'<span style="width:84px"></span>'}</div>`;}
+  h+=`<div class="info">Na ekranie pokazywane są 2 pierwsze znaki nazwy. Próg jest wyłącznie wizualny (pasek na ekranie Teraz); puste = brak.</div></div>`;
+  h+=`<div class="sec">Bezpieczeństwo</div><div class="card"><div class="setrow"><label class="grow">automatyczna blokada po wyjściu<select data-set="autolock">${[[0,'od razu'],[60,'po 1 min'],[300,'po 5 min'],[900,'po 15 min']].map(([v,l])=>`<option value="${v}"${S.settings.autolock===v?' selected':''}>${l}</option>`).join('')}</select></label></div>
+  <div class="setrow"><label class="grow">usuń dane po błędnych PIN-ach<select data-set="wipe">${[[0,'nigdy'],[5,'5 próbach'],[10,'10 próbach'],[20,'20 próbach']].map(([v,l])=>`<option value="${v}"${(META.wipe||0)===v?' selected':''}>${l}</option>`).join('')}</select></label></div></div>`;
+  h+=`<button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
+  h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
+  h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  $('#view').innerHTML=h;
+}
+
+/* ---------- sheet ---------- */
+function openSheet(draw,onClick,onInput){
+  const root=$('#sheet'),box=root.querySelector('.sheet');root.hidden=false;
+  const redraw=()=>{box.innerHTML=draw();};redraw();box.scrollTop=0;
+  box.onclick=ev=>{const b=ev.target.closest('[data-x]');if(b){ev.preventDefault();onClick(b.dataset.x,b.dataset.v,redraw,b);}};
+  box.oninput=box.onchange=onInput||null;
+  root.querySelector('.dim').onclick=closeSheet;
+}
+function closeSheet(){const r=$('#sheet');r.hidden=true;r.querySelector('.sheet').innerHTML='';}
+
+function openEntry(k,id,opt={}){
+  const isNew=!id,arr=k==='s'?S.sessions:S.events,o=isNew?opt.draft:arr.find(x=>x.id===id);if(!o)return;
+  const w=JSON.parse(JSON.stringify(o));let delArm=false;
+  const draw=()=>{
+    let h='<div class="grab"></div>';
+    if(k==='s'){
+      h+=`<h3>${sym(w.cat,'s')} ${opt.finish?'zakończono':isNew?'nowa sesja':'sesja'}</h3>`;
+      if(isNew)h+=`<span class="f">KATEGORIA</span><div class="chips">${SESS.map(c=>`<button class="chip${w.cat===c?' on':''}" data-x="cat" data-v="${c}">${alias(c)}</button>`).join('')}</div>`;
+      h+=`<div class="two"><label><span class="f">START</span><input type="datetime-local" data-in="start" value="${toInput(w.start)}"></label><label><span class="f">KONIEC</span><input type="datetime-local" data-in="end" value="${w.end?toInput(w.end):''}"></label></div>`;
+      h+=`<p class="sub2 num" id="durl">${w.end?dur(w.end-w.start):'trwa'}</p>`;
+      const its=S.items.filter(i=>i.cat===w.cat);
+      h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
+      if(!isNew){const n=S.events.filter(e=>e.sessionId===w.id).length;h+=`<span class="f">ZDARZENIA ${alias('E')} W TRAKCIE</span><div class="chips"><span class="chip ro num">${n}</span><button class="chip" data-x="addev">+ dodaj</button></div>`;}
+    }else{
+      h+=`<h3>${sym('E','s')} ${isNew||opt.finish?'nowe zdarzenie':'zdarzenie'}</h3><label><span class="f">CZAS</span><input type="datetime-local" data-in="at" value="${toInput(w.at)}"></label>`;
+      const ov=S.sessions.filter(s=>s.start<=w.at&&(s.end||Date.now())>=w.at);
+      h+=`<span class="f">PODCZAS SESJI</span><div class="chips"><button class="chip${!w.sessionId?' on':''}" data-x="sess" data-v="">brak</button>${ov.map(s=>`<button class="chip${w.sessionId===s.id?' on':''}" data-x="sess" data-v="${s.id}">${alias(s.cat)} od ${hm(s.start)}</button>`).join('')}</div>`;
+      const tags=[...new Set(S.events.map(e=>e.tag).filter(Boolean))];
+      h+=`<span class="f">KONTEKST</span><input type="text" data-in="tag" list="tagl" maxlength="30" value="${esc(w.tag)}" placeholder="własny znacznik (opcjonalnie)"><datalist id="tagl">${tags.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
+    }
+    h+=`<span class="f">OCENA</span><div class="stars">${[1,2,3,4,5].map(n=>`<button class="${(w.rating||0)>=n?'on':''}" data-x="rate" data-v="${n}"></button>`).join('')}</div>`;
+    h+=`<span class="f">NOTATKA</span><textarea data-in="note" rows="3" maxlength="2000" placeholder="Opcjonalnie…">${esc(w.note)}</textarea>`;
+    h+=`<div class="err" id="err"></div><button class="save" data-x="save">Zapisz</button><div class="row2">${isNew?'<span></span>':`<button class="link danger" data-x="del">${delArm?'Na pewno usunąć?':'Usuń'}</button>`}<button class="link" data-x="close">${opt.finish?'Pomiń szczegóły':'Anuluj'}</button></div>`;
+    return h;
+  };
+  openSheet(draw,(x,v,redraw)=>{
+    if(x==='cat'){w.cat=v;w.itemId=null;redraw();}
+    else if(x==='item'){w.itemId=w.itemId===v?null:v;redraw();}
+    else if(x==='rate'){w.rating=w.rating===+v?null:+v;redraw();}
+    else if(x==='sess'){w.sessionId=v||null;redraw();}
+    else if(x==='addev'){S.events.push({id:uid(),at:w.end||Date.now(),rating:null,sessionId:w.id,tag:'',note:''});save();redraw();toast('Dodano zdarzenie');}
+    else if(x==='close'){closeSheet();render();}
+    else if(x==='del'){
+      if(!delArm){delArm=true;redraw();return;}
+      const i=arr.findIndex(z=>z.id===w.id);if(i>=0)arr.splice(i,1);
+      if(k==='s')S.events.forEach(e=>{if(e.sessionId===w.id)e.sessionId=null;});
+      save();closeSheet();render();toast('Usunięto');
+    }
+    else if(x==='save'){
+      const err=t=>{$('#err').textContent=t;};
+      if(k==='s'){
+        if(!w.start)return err('Podaj start');
+        if(w.end&&w.end<w.start)return err('Koniec jest przed startem');
+        if(!w.end&&S.sessions.some(s=>s.id!==w.id&&s.cat===w.cat&&!s.end))return err('Ta kategoria już trwa — podaj koniec');
+      }else if(!w.at)return err('Podaj czas');
+      if(k==='e'&&w.sessionId){const s=S.sessions.find(z=>z.id===w.sessionId);if(!s||s.start>w.at||(s.end&&s.end<w.at))w.sessionId=null;}
+      if(isNew)arr.push(w);else Object.assign(o,w);
+      save();closeSheet();render();toast('Zapisano');
+    }
+  },ev=>{
+    const n=ev.target.dataset.in;if(!n)return;
+    if(n==='start'||n==='end'||n==='at'){w[n]=fromInput(ev.target.value);const dl=$('#durl');if(dl&&k==='s')dl.textContent=w.end&&w.start?dur(w.end-w.start):'trwa';}
+    else w[n]=ev.target.value;
+  });
+}
+
+function openItem(id){
+  const isNew=!id,o=isNew?{id:uid(),cat:'R',alias:'',material:'',size:'',note:''}:S.items.find(i=>i.id===id);if(!o)return;
+  const w=JSON.parse(JSON.stringify(o));let delArm=false;
+  const MAT=['silikon','metal','szkło','inne'];
+  openSheet(()=>`<div class="grab"></div><h3>${isNew?'Nowy przedmiot':'Przedmiot'}</h3>
+    <span class="f">KATEGORIA</span><div class="chips">${SESS.map(c=>`<button class="chip${w.cat===c?' on':''}" data-x="cat" data-v="${c}">${alias(c)}</button>`).join('')}</div>
+    <span class="f">NAZWA / KRYPTONIM</span><input type="text" data-in="alias" maxlength="30" value="${esc(w.alias)}">
+    <span class="f">MATERIAŁ</span><div class="chips">${MAT.map(m=>`<button class="chip${w.material===m?' on':''}" data-x="mat" data-v="${m}">${m}</button>`).join('')}</div>
+    <span class="f">ROZMIAR</span><input type="text" data-in="size" maxlength="30" value="${esc(w.size)}" placeholder="np. 45 mm, M">
+    <span class="f">NOTATKA (np. czyszczenie)</span><textarea data-in="note" rows="2" maxlength="1000">${esc(w.note)}</textarea>
+    <div class="err" id="err"></div><button class="save" data-x="save">Zapisz</button>
+    <div class="row2">${isNew?'<span></span>':`<button class="link danger" data-x="del">${delArm?'Na pewno usunąć?':'Usuń'}</button>`}<button class="link" data-x="close">Anuluj</button></div>`,
+  (x,v,redraw)=>{
+    if(x==='cat'){w.cat=v;redraw();}
+    else if(x==='mat'){w.material=w.material===v?'':v;redraw();}
+    else if(x==='close')closeSheet();
+    else if(x==='del'){if(!delArm){delArm=true;redraw();return;}S.items=S.items.filter(i=>i.id!==w.id);S.sessions.forEach(s=>{if(s.itemId===w.id)s.itemId=null;});save();closeSheet();render();}
+    else if(x==='save'){if(!w.alias.trim()){$('#err').textContent='Podaj nazwę';return;}w.alias=w.alias.trim();if(isNew)S.items.push(w);else Object.assign(o,w);save();closeSheet();render();}
+  },ev=>{const n=ev.target.dataset.in;if(n)w[n]=ev.target.value;});
+}
+
+function pwSheet(title,hint,fields,onOk){
+  const vals={};
+  openSheet(()=>`<div class="grab"></div><h3>${title}</h3>${hint?`<p class="sub2">${hint}</p>`:''}${fields.map(([n,l,num])=>`<span class="f">${l}</span><input type="password" data-in="${n}" ${num?'inputmode="numeric" pattern="[0-9]*"':''} autocomplete="off">`).join('')}<div class="err" id="err"></div><button class="save" data-x="ok">OK</button><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+  async(x)=>{if(x==='close')closeSheet();else if(x==='ok'){const r=await onOk(vals);if(typeof r==='string')$('#err').textContent=r;}},
+  ev=>{const n=ev.target.dataset.in;if(n)vals[n]=ev.target.value;});
+}
+
+/* ---------- actions ---------- */
+const ACT={
+  pin(d){if(busyOn)return;if(d.v==='del')pin=pin.slice(0,-1);else if(d.v==='ok'){submitPin();return;}else if(pin.length<8)pin+=d.v;renderLock();if(pin.length===8)submitPin();},
+  tab(d){tab=d.tab;window.scrollTo(0,0);render();},
+  start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();},
+  stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
+  event(){const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:''};S.events.push(e);save();render();openEntry('e',e.id,{finish:true});},
+  edit(d){openEntry(d.k,d.id);},
+  hm(d){hist.m+=+d.v;if(hist.m<0){hist.m=11;hist.y--;}if(hist.m>11){hist.m=0;hist.y++;}render();},
+  hf(d){hist.filter=d.v||null;render();},
+  hd(d){hist.day=d.v;render();},
+  addEntry(){
+    openSheet(()=>`<div class="grab"></div><h3>Dodaj wpis</h3><p class="sub2">dla dnia ${esc(hist.day)}</p><div class="big">${CATS.map(c=>`<button class="btn" data-x="pick" data-v="${c}">${sym(c)}<small>${c==='E'?'zdarzenie':'sesja'}</small></button>`).join('')}</div><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+    (x,v)=>{if(x==='close'){closeSheet();return;}
+      const [y,m,dd]=hist.day.split('-').map(Number);let base=new Date(y,m-1,dd,20,0).getTime();if(hist.day===dayKey(Date.now()))base=Date.now()-30*60000;
+      closeSheet();
+      if(v==='E')openEntry('e',null,{draft:{id:uid(),at:base,rating:null,sessionId:null,tag:'',note:''}});
+      else openEntry('s',null,{draft:{id:uid(),cat:v,start:base,end:base+30*60000,itemId:null,rating:null,note:''}});
+    });
+  },
+  sc(d){stat.cat=d.v;render();},
+  sr(d){stat.range=+d.v;render();},
+  addItem(){openItem(null);},
+  editItem(d){openItem(d.id);},
+  lock(){lock();},
+  chpin(){
+    pwSheet('Zmień PIN','Dłuższy PIN jest trudniejszy do złamania, jeśli ktoś skopiuje dane z urządzenia. Zalecane 6–8 cyfr.',[['cur','OBECNY PIN',1],['p1','NOWY PIN',1],['p2','POWTÓRZ NOWY',1]],async v=>{
+      if(!/^\d{4,8}$/.test(v.p1||''))return 'Nowy PIN: 4–8 cyfr';if(v.p1!==v.p2)return 'Nowe PIN-y się różnią';
+      busy(true,'Sprawdzanie…');
+      try{await unseal(await derive(v.cur||'',unb64(META.salt),META.iter),BOX);}catch(e){busy(false);return 'Błędny obecny PIN';}
+      const salt=crypto.getRandomValues(new Uint8Array(16));KEY=await derive(v.p1,salt,ITER);META.salt=b64(salt);META.iter=ITER;await save();busy(false);closeSheet();toast('PIN zmieniony');
+    });
+  },
+  exp(){
+    pwSheet('Eksport kopii','Plik zaszyfrowany osobnym hasłem (min. 8 znaków). Bez hasła kopii nie da się odczytać — zapisz je w bezpiecznym miejscu.',[['p1','HASŁO KOPII'],['p2','POWTÓRZ HASŁO']],async v=>{
+      if((v.p1||'').length<8)return 'Minimum 8 znaków';if(v.p1!==v.p2)return 'Hasła się różnią';
+      busy(true,'Szyfrowanie…');
+      const salt=crypto.getRandomValues(new Uint8Array(16)),key=await derive(v.p1,salt,ITER),box=await seal(key,JSON.stringify(S));
+      const txt=JSON.stringify({f:'dz1',salt:b64(salt),iter:ITER,iv:box.iv,ct:box.ct});busy(false);
+      const name=`kopia-${dayKey(Date.now())}.json`,file=new File([txt],name,{type:'application/json'});
+      openSheet(()=>`<div class="grab"></div><h3>Kopia gotowa</h3><p class="sub2">${esc(name)} · ${Math.ceil(txt.length/1024)} KB</p><button class="save" data-x="share">Zapisz / udostępnij plik</button><div class="row2"><span></span><button class="link" data-x="close">Zamknij</button></div>`,
+      async x=>{if(x==='close'){closeSheet();return;}
+        try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});}
+          else{const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),10000);}
+        }catch(e){if(e&&e.name!=='AbortError')toast('Nie udało się zapisać pliku');}
+      });
+    });
+  },
+  imp(){$('#impf').value='';$('#impf').click();},
+  wipeAll(){
+    let val='';
+    openSheet(()=>`<div class="grab"></div><h3>Usuń wszystkie dane</h3><p class="sub2">Tej operacji nie da się cofnąć. Wpisz USUŃ, aby potwierdzić.</p><span class="f">POTWIERDZENIE</span><input type="text" data-in="c" autocomplete="off"><div class="err" id="err"></div><button class="save" style="background:var(--warn)" data-x="ok">Usuń</button><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+    async x=>{if(x==='close'){closeSheet();return;}if(val.trim().toUpperCase()!=='USUŃ'){$('#err').textContent='Wpisz USUŃ';return;}await saving;await idb.del('vault');location.reload();},
+    ev=>{if(ev.target.dataset.in)val=ev.target.value;});
+  }
+};
+
+$('#impf').addEventListener('change',async ev=>{
+  const f=ev.target.files&&ev.target.files[0];if(!f||!S)return;
+  let pack;try{pack=JSON.parse(await f.text());if(pack.f!=='dz1')throw 0;}catch(e){toast('To nie jest plik kopii');return;}
+  pwSheet('Import kopii','Dane z kopii zastąpią obecne dane w aplikacji.',[['p','HASŁO KOPII']],async v=>{
+    busy(true,'Odszyfrowywanie…');let data;
+    try{data=await unseal(await derive(v.p||'',unb64(pack.salt),pack.iter),pack);}catch(e){busy(false);return 'Błędne hasło lub uszkodzony plik';}
+    busy(false);
+    if(!data||!Array.isArray(data.sessions))return 'Nieprawidłowa zawartość';
+    const n=(data.sessions||[]).length+(data.events||[]).length;
+    openSheet(()=>`<div class="grab"></div><h3>Zastąpić dane?</h3><p class="sub2">Obecnie: ${S.sessions.length+S.events.length} wpisów → z kopii: ${n} wpisów.</p><button class="save" data-x="ok">Zastąp</button><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+    x=>{if(x==='close'){closeSheet();return;}S=data;migrate();save();closeSheet();tab='now';render();toast('Zaimportowano');});
+  });
+});
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  if(!S&&!t.closest('#lock'))return;
+  const fn=ACT[t.dataset.act];if(fn){e.preventDefault();fn(t.dataset,t);}
+});
+$('#view').addEventListener('change',ev=>{
+  const el=ev.target,s=el.dataset.set;if(!s||!S)return;const c=el.dataset.cat;
+  if(s==='alias')S.cats[c].alias=el.value.trim().slice(0,12)||c;
+  else if(s==='color')S.cats[c].color=/^#[0-9a-f]{6}$/i.test(el.value)?el.value:DEF[c].color;
+  else if(s==='limit'){const v=parseInt(el.value,10);S.cats[c].limit=v>0?v:null;}
+  else if(s==='autolock')S.settings.autolock=+el.value;
+  else if(s==='wipe')META.wipe=+el.value;
+  save();render();
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){document.body.classList.add('veil');hiddenAt=Date.now();if(S&&S.settings.autolock===0)lock();}
+  else{if(S&&Date.now()-hiddenAt>S.settings.autolock*1000)lock();document.body.classList.remove('veil');if(S)render();}
+});
+
+(async function init(){
+  try{
+    const v=await idb.get('vault');
+    if(v&&v.ct){META={salt:v.salt,iter:v.iter,fails:v.fails||0,wipe:v.wipe==null?10:v.wipe};BOX={iv:v.iv,ct:v.ct};mode='unlock';}
+    else mode='setup1';
+  }catch(e){mode='setup1';}
+  showLock();
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
