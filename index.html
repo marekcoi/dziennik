@@ -1160,7 +1160,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v18.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
