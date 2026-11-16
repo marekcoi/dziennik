@@ -1064,7 +1064,7 @@ function renderStats(){
   const LL=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=LL.length;
   const rated=LL.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
   const cur=all.length?now-all[all.length-1].t:null;
-  let longest=0;for(let i=1;i<LL.length;i++)longest=Math.max(longest,L[i].t-L[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
+  let longest=0;for(let i=1;i<LL.length;i++)longest=Math.max(longest,LL[i].t-LL[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
   let h=`<div class="hdr"><b>Statystyki</b></div>`+recordsCard()+yearCal();
   h+=`<div class="seg">${CATS.filter(catOn).map(x=>`<button class="${x===c?'on':''}" data-act="sc" data-v="${x}" style="color:${S.cats[x].color}">${alias(x)}</button>`).join('')}</div>`;
   h+=`<div class="seg">${[[30,'30 dni'],[90,'90 dni'],[365,'rok'],[0,'całość']].map(([v,l])=>`<button class="${stat.range===v?'on':''}" data-act="sr" data-v="${v}">${l}</button>`).join('')}</div>`;
