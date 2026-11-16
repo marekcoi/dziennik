@@ -177,6 +177,11 @@ td.r,th.r{text-align:right}
 .bdg small{font-size:10px;color:var(--tx3);display:block;margin-top:2px}
 .xpt{font-size:12px;color:var(--tx2);line-height:1.6}
 #cf{position:fixed;inset:0;pointer-events:none;z-index:60}
+.sym.gi{padding:0}.sym.gi svg{width:74%;height:74%}
+.btn .sym.gi{width:46px;height:46px;border-radius:13px}
+.active .sym.gi{width:34px;height:34px;border-radius:10px}
+.bdg .bi{display:block;width:64px;height:64px;margin:0 auto}.bdg .bi svg{width:100%;height:100%}
+.cimg{display:flex;justify-content:center;margin:6px 0 4px;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}.cimg svg{width:132px;height:132px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
 /* misc */
 #toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;max-width:90%;text-align:center;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -249,7 +254,19 @@ function toInput(ts){const d=new Date(ts);return `${d.getFullYear()}-${pad2(d.ge
 function fromInput(v){if(!v)return null;const t=new Date(v).getTime();return isNaN(t)?null:t;}
 const fnum=(x,d=1)=>x.toFixed(d).replace('.',',');
 function txtOn(hex){const n=parseInt(hex.slice(1),16);return (0.299*(n>>16)+0.587*(n>>8&255)+0.114*(n&255))>150?'#111':'#fff';}
-function sym(c,cls=''){const k=S.cats[c];return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
+const SVG_TAGS=new Set(['svg','g','path','circle','ellipse','rect','line','polyline','polygon','defs','lineargradient','radialgradient','stop','text','tspan']);
+const SVG_ATTR=/^(viewbox|xmlns|d|cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|width|height|points|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|opacity|fill-opacity|stroke-opacity|transform|id|offset|stop-color|stop-opacity|gradientunits|gradienttransform|fx|fy|font-size|font-weight|font-family|text-anchor|dominant-baseline|fill-rule|clip-rule|letter-spacing)$/;
+function cleanSvg(str){try{
+  const doc=new DOMParser().parseFromString(String(str).slice(0,30000),'image/svg+xml'),root=doc.documentElement;
+  if(!root||root.nodeName.toLowerCase()!=='svg'||doc.getElementsByTagName('parsererror').length)return null;
+  const walk=el=>{for(const ch of [...el.children]){if(!SVG_TAGS.has(ch.nodeName.toLowerCase())){ch.remove();continue;}walk(ch);}
+    for(const a of [...el.attributes]){const n=a.name.toLowerCase(),v=a.value;if(!SVG_ATTR.test(n)||/javascript:|data:|url\(\s*['"]?(?!#)/i.test(v))el.removeAttribute(a.name);}};
+  walk(root);return new XMLSerializer().serializeToString(root);}catch(e){return null;}}
+const gfxOn=()=>!!(S&&S.settings.gfx!==false&&!S.settings.discreet&&S.msg&&S.msg.icons);
+const icon=n=>gfxOn()&&S.msg.icons[n]?S.msg.icons[n]:'';
+function levelMedal(L){const h=(r,cy)=>Array.from({length:6},(_,i)=>{const a=(i*60-90)*Math.PI/180;return (50+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);}).join(' ');
+  return `<svg viewBox="0 0 100 100"><defs><linearGradient id="lma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3D6FF"/><stop offset="1" stop-color="#3E3290"/></linearGradient><linearGradient id="lmb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C3A6FF"/><stop offset="1" stop-color="#5A4BC0"/></linearGradient></defs><polygon points="${h(44,51)}" fill="url(#lma)" stroke="url(#lma)" stroke-width="8" stroke-linejoin="round"/><polygon points="${h(36,51)}" fill="url(#lmb)" stroke="url(#lmb)" stroke-width="6" stroke-linejoin="round"/><ellipse cx="42" cy="26" rx="20" ry="8" fill="#fff" opacity=".18"/><text x="50" y="${L>99?62:65}" text-anchor="middle" font-size="${L>99?28:38}" font-weight="800" fill="#fff" font-family="-apple-system,system-ui,sans-serif">${L}</text></svg>`;}
+function sym(c,cls=''){const k=S.cats[c],ic=icon('cat_'+c);if(ic)return `<span class="sym gi ${cls}" style="background:${k.color}">${ic}</span>`;return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
 const alias=c=>esc(S.cats[c].alias||c);
 const itemName=id=>(S.items.find(i=>i.id===id)||{}).alias||'';
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
@@ -393,7 +410,7 @@ function todayCard(g){
 }
 function showMsg(text,opt={}){
   if(!text||!S.settings.msgs){if(opt.then)opt.then();else render();return;}
-  openSheet(()=>`<div class="grab"></div>${S.settings.discreet?'<div class="hintx">dotknij tekstu, aby odsłonić</div>':''}<button class="big-msg${S.settings.discreet?' blur':''}" data-x="rev">${esc(text)}</button>${opt.sub?`<p class="sub2">${opt.sub}</p>`:''}<button class="save" data-x="ok">${opt.btn||'OK'}</button>`,
+  openSheet(()=>`<div class="grab"></div>${opt.icon&&icon(opt.icon)?`<div class="cimg">${icon(opt.icon)}</div>`:''}${S.settings.discreet?'<div class="hintx">dotknij tekstu, aby odsłonić</div>':''}<button class="big-msg${S.settings.discreet?' blur':''}" data-x="rev">${esc(text)}</button>${opt.sub?`<p class="sub2">${opt.sub}</p>`:''}<button class="save" data-x="ok">${opt.btn||'OK'}</button>`,
   (x,v,r,b)=>{if(x==='rev'){b.classList.toggle('blur');return;}closeSheet();if(opt.then)opt.then();else render();});
 }
 function quick(names,vars){if(S.settings.msgs&&!S.settings.discreet){const t=pick(names,vars);if(t)toast(t);}}
@@ -415,9 +432,9 @@ function checks(){
 }
 function afterFinish(s){
   const then=()=>celebrate();
-  if(s.cat==='D'&&s.ao>0)return showMsg(pick('ao',{n:s.ao,tydz:status().ao}),{then});
-  if(s.cat==='D')return showMsg(pick('dildo_done',{}),{then});
-  if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}),{then});
+  if(s.cat==='D'&&s.ao>0){if(gfxOn())confetti();return showMsg(pick('ao',{n:s.ao,tydz:status().ao}),{then,icon:'cel_ao'});}
+  if(s.cat==='D')return showMsg(pick('dildo_done',{}),{then,icon:'cel_dildo'});
+  if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}),{then,icon:'cel_big'});
   if(s.cat==='P'){quick('plug_done',{});return celebrate();}
   quick('ring_done',{});celebrate();
 }
@@ -493,18 +510,18 @@ function confetti(){
     if(el<2400)requestAnimationFrame(f);else c.remove();})(t0);
 }
 function showCard(t,then){
-  openSheet(()=>`<div class="grab"></div><div class="celeb${t.num?' num':''}">${t.big}</div>${t.sub?`<div class="csub">${t.sub}</div>`:''}
+  openSheet(()=>`<div class="grab"></div>${t.icon?`<div class="cimg">${t.icon}</div>`:`<div class="celeb${t.num?' num':''}">${t.big}</div>`}${t.sub?`<div class="csub">${t.sub}</div>`:''}
     ${t.text?`${S.settings.discreet?'<div class="hintx" style="text-align:center">dotknij tekstu, aby odsłonić</div>':''}<button class="big-msg${S.settings.discreet?' blur':''}" style="text-align:center" data-x="rev">${esc(t.text)}</button>`:''}
     <button class="save" data-x="ok">${t.btn||'Dalej'}</button>`,
   (x,v,r,b)=>{if(x==='rev'){b.classList.toggle('blur');return;}closeSheet();then();});
 }
 function celebrate(then){
   const g=computeGame(),sn=S.seen,q=[],tk=dayKey(Date.now()),msgOn=S.settings.msgs;
-  if(sn.used==null)sn.used=g.used;else if(g.used>sn.used){q.push({big:'❄️',sub:'Zamrożenie użyte — seria ocalała',text:msgOn?pick('streak_freeze_used',{seria:g.streak}):''});sn.used=g.used;}
-  if(g.todayDone&&sn.streakDay!==tk){sn.streakDay=tk;q.push({conf:g.streak>1,big:'🔥 '+g.streak,num:true,sub:g.streak===1?'seria rozpoczęta':`${g.streak} dni z rzędu`,text:msgOn?pick('streak_ext',{seria:g.streak}):''});}
-  if(sn.level==null)sn.level=g.level;else if(g.level>sn.level){sn.level=g.level;const nm=levelName(g.level);q.push({conf:true,big:'⬆️ '+g.level,num:true,sub:nm?esc(nm):'nowy poziom',text:msgOn?pick('level_up',{poziom:g.level,nazwa:nm||g.level}):''});}
+  if(sn.used==null)sn.used=g.used;else if(g.used>sn.used){q.push({icon:icon('cel_freeze'),big:'❄️',sub:'Zamrożenie użyte — seria ocalała',text:msgOn?pick('streak_freeze_used',{seria:g.streak}):''});sn.used=g.used;}
+  if(g.todayDone&&sn.streakDay!==tk){sn.streakDay=tk;q.push({conf:g.streak>1,icon:icon('cel_streak'),big:'🔥 '+g.streak,num:true,sub:g.streak===1?'seria rozpoczęta':`${g.streak} dni z rzędu`,text:msgOn?pick('streak_ext',{seria:g.streak}):''});}
+  if(sn.level==null)sn.level=g.level;else if(g.level>sn.level){sn.level=g.level;const nm=levelName(g.level);q.push({conf:true,icon:levelMedal(g.level),big:'⬆️ '+g.level,num:true,sub:nm?esc(nm):'nowy poziom',text:msgOn?pick('level_up',{poziom:g.level,nazwa:nm||g.level}):''});}
   const un=BADGES.filter(b=>b[4](g)).map(b=>b[0]);
-  if(!Array.isArray(sn.badges))sn.badges=un;else for(const id of un)if(!sn.badges.includes(id)){sn.badges.push(id);const b=BADGES.find(z=>z[0]===id);q.push({conf:true,big:b[1],sub:'Nowa odznaka: <b>'+esc(badgeName(b))+'</b>',text:msgOn?pick('badge',{nazwa:badgeName(b)}):''});}
+  if(!Array.isArray(sn.badges))sn.badges=un;else for(const id of un)if(!sn.badges.includes(id)){sn.badges.push(id);const b=BADGES.find(z=>z[0]===id);q.push({conf:true,icon:icon('b_'+b[0]),big:b[1],sub:'Nowa odznaka: <b>'+esc(badgeName(b))+'</b>',text:msgOn?pick('badge',{nazwa:badgeName(b)}):''});}
   if(sn.xp!=null&&g.xp>sn.xp)toast(`+${g.xp-sn.xp} XP`);sn.xp=g.xp;
   save();
   const run=()=>{const t=q.shift();if(!t){if(then)then();else render();return;}if(t.conf)confetti();showCard(t,run);};run();
@@ -625,7 +642,8 @@ function renderSet(){
    <div class="info">Przedmiot liczony jako trening tygodniowy oznaczasz w zakładce Przedmioty. 0 = cel wyłączony.</div></div>
   <div class="sec">Komunikaty</div><div class="card">
    <div class="setrow"><label class="grow">komunikaty${yn('msgs',S.settings.msgs)}</label><label class="grow">tryb dyskretny${yn('discreet',S.settings.discreet)}</label></div>
-   <div class="info">Pakiet: ${S.msg?`własny (${cnt} tekstów)`:'domyślny, neutralny'}. Tryb dyskretny rozmywa teksty do momentu dotknięcia i wyłącza dymki z tekstami.</div></div>
+   <div class="setrow"><label class="grow">grafiki z pakietu${yn('gfx',S.settings.gfx!==false)}</label><span class="grow info" style="margin:0">${S.msg&&S.msg.icons?Object.keys(S.msg.icons).length+' grafik':'brak grafik w pakiecie'}</span></div>
+   <div class="info">Pakiet: ${S.msg?`własny (${cnt} tekstów)`:'domyślny, neutralny'}. Tryb dyskretny rozmywa teksty do momentu dotknięcia, wyłącza dymki z tekstami i ukrywa grafiki.</div></div>
   <button class="setbtn" data-act="impMsg">Importuj pakiet komunikatów</button>${S.msg?'<button class="setbtn" data-act="defMsg">Przywróć domyślne komunikaty</button>':''}`;
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
@@ -743,7 +761,7 @@ const ACT={
     openSheet(()=>`<div class="grab"></div><h3><span class="lvlc">${g.level}</span>${nm?esc(nm):'Poziom '+g.level}</h3><p class="sub2 num">${g.xp} XP łącznie · do poziomu ${g.level+1}: ${g.to-g.xp} XP</p>
       <div class="xpbar" style="margin:10px 0 14px"><i style="width:${(g.xp-g.from)/(g.to-g.from)*100}%"></i></div>
       <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / 2')}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2('AO łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}</div>
-      <span class="f">ODZNAKI ${un.size} / ${BADGES.length}</span><div class="badges">${BADGES.map(b=>`<div class="bdg${un.has(b[0])?' on':''}"><i>${b[1]}</i><b>${esc(badgeName(b))}</b><small>${esc(b[3])}</small></div>`).join('')}</div>
+      <span class="f">ODZNAKI ${un.size} / ${BADGES.length}</span><div class="badges">${BADGES.map(b=>`<div class="bdg${un.has(b[0])?' on':''}">${icon('b_'+b[0])?`<span class="bi">${icon('b_'+b[0])}</span>`:`<i>${b[1]}</i>`}<b>${esc(badgeName(b))}</b><small>${esc(b[3])}</small></div>`).join('')}</div>
       <span class="f">JAK DZIAŁA SERIA</span><div class="xpt">Dzień jest zaliczony, gdy był ${alias('P')} (dowolny) albo ${alias('D')}. Za każde 7 zaliczonych dni z rzędu dostajesz zamrożenie (maks. 2) — ratuje serię, jeśli opuścisz dzień. ${alias('E')} nie przerywa serii.</div>
       <span class="f">PUNKTY XP</span><div class="xpt">${alias('P')}: 10 + 2/h (do 16) · duży: 40 + 5/30 min (do 20) · ${alias('D')}: 30 · AO: +50 · ${alias('R')}: 10 + do 10 · ${alias('E')}: 25 · idealny tydzień: 100 · seria 7/14/30/50/100…: dni×10 · dni bez ${alias('E')} (3…365): dni×5</div>
       <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,()=>closeSheet());},
@@ -751,7 +769,7 @@ const ACT={
   defMsg(){S.msg=null;headMsg.key='';save();render();toast('Przywrócono domyślne');},
   stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
   event(){const prev=status().streak;const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:''};S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
-    showMsg(pick('ejac',{dni:prev}),{sub:`Seria: ${prev} d`,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});},
+    if(gfxOn())confetti();showMsg(pick('ejac',{dni:prev}),{icon:'cel_ejac',sub:`Seria: ${prev} d`,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});},
   edit(d){openEntry(d.k,d.id);},
   hm(d){hist.m+=+d.v;if(hist.m<0){hist.m=11;hist.y--;}if(hist.m>11){hist.m=0;hist.y++;}render();},
   hf(d){hist.filter=d.v||null;render();},
@@ -822,7 +840,8 @@ $('#impm').addEventListener('change',async ev=>{
     const pools={};let n=0;for(const [k,v] of Object.entries(pk.pools)){if(/^[a-z_0-9]{1,30}$/.test(k)&&Array.isArray(v)){pools[k]=v.filter(x=>typeof x==='string').map(x=>x.slice(0,500)).slice(0,200);n+=pools[k].length;}}
     const levels=Array.isArray(pk.levels)?pk.levels.filter(x=>typeof x==='string').map(x=>x.slice(0,40)).slice(0,100):undefined;
     const badges={};if(pk.badges&&typeof pk.badges==='object')for(const [k,v] of Object.entries(pk.badges))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')badges[k]=v.slice(0,40);
-    S.msg={pools,levels,badges};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
+    const icons={};let ni=0;if(pk.icons&&typeof pk.icons==='object')for(const [k,v] of Object.entries(pk.icons)){if(/^[a-z_0-9]{1,30}$/i.test(k)&&typeof v==='string'){const c=cleanSvg(v);if(c){icons[k]=c;ni++;}}}
+    S.msg={pools,levels,badges,icons:ni?icons:undefined};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
   }catch(e){toast('To nie jest pakiet komunikatów');}
 });
 
@@ -842,6 +861,7 @@ $('#view').addEventListener('change',ev=>{
   else if(s==='g_d'||s==='g_big'||s==='g_r'){const v=Math.max(0,Math.min(14,parseInt(el.value,10)||0));S.goals[{g_d:'dPerWeek',g_big:'bigPerWeek',g_r:'rPerWeek'}[s]]=v;}
   else if(s==='msgs')S.settings.msgs=el.value==='1';
   else if(s==='discreet')S.settings.discreet=el.value==='1';
+  else if(s==='gfx')S.settings.gfx=el.value==='1';
   headMsg.key='';
   save();render();
 });
