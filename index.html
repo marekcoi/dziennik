@@ -217,6 +217,11 @@ td.r,th.r{text-align:right}
 .xpt{font-size:12px;color:var(--tx2);line-height:1.6}
 #cf{position:fixed;inset:0;pointer-events:none;z-index:60}
 .chl{border-top:1px solid var(--line);padding:9px 0 4px}
+.tip{display:block;width:100%;text-align:left;background:linear-gradient(160deg,#3A3320,var(--card) 70%);border:1px solid #5A4C26;border-radius:18px;padding:12px 14px;margin-bottom:12px}
+.tip small{font-size:11px;color:#E8C770;text-transform:uppercase;letter-spacing:.6px;display:flex;justify-content:space-between}
+.tip div{font-size:14px;line-height:1.45;margin-top:6px}
+.ptip{font-size:12px;color:#E8C770;margin-top:8px;line-height:1.4}
+.tipbig{font-size:18px;line-height:1.5;font-weight:600;padding:8px 0 4px;text-align:left;width:100%;display:block}
 .chl .t{display:flex;align-items:center;gap:8px;font-size:13px}
 .chl .t span{flex:1}.chl .t em{font-style:normal;font-size:11px;font-weight:700;color:#FFB35C;background:#3A2E22;border-radius:8px;padding:2px 7px}
 .chl.ok .t em{color:#7FAE8E;background:#24332A}
@@ -475,6 +480,10 @@ function dueList(st){const G=S.goals,o=[];
   if(G.bigPerWeek&&st.big<G.bigPerWeek)o.push(['big_due',{zostalo:G.bigPerWeek-st.big}]);
   if(G.rPerWeek&&st.r<G.rPerWeek&&st.dow>=2)o.push(['ring_due',{zostalo:G.rPerWeek-st.r}]);
   return o;}
+const TIPCATS=[['tip_mind','Głowa'],['tip_body','Ciało'],['tip_prostate','Prostata'],['tip_tech','Technika'],['tip_motiv','Motywacja']];
+function allTips(){const out=[];if(!S.msg||!S.settings.msgs)return out;for(const [k,l] of TIPCATS){const p=S.msg.pools[k];if(Array.isArray(p))for(const t of p)out.push([l,t]);}return out;}
+function tipOfDay(off=0){const T=allTips();if(!T.length)return null;const d=Math.floor((dayStart(Date.now())-new Date(2026,0,1).getTime())/864e5);const i=(((d*7)+off)%T.length+T.length)%T.length;return{i,cat:T[i][0],t:T[i][1],n:T.length};}
+function tipCard(){const t=tipOfDay();if(!t)return '';return `<button class="tip" data-act="tips"><small><span>💡 Tip dnia · ${esc(t.cat)}</span><span>więcej ›</span></small><div class="${S.settings.discreet?'blur':''}">${esc(t.t)}</div></button>`;}
 function todayCard(g){
   const st=status(),G=S.goals,due=dueList(st);
   if(g&&!g.todayDone&&g.streak>0&&new Date().getHours()>=18)due.unshift(['streak_risk',{seria:g.streak}]);
@@ -829,10 +838,11 @@ function renderNow(){
     const k=S.cats[s.cat],lim=k.limit,it=itemName(s.itemId);
     h+=`<div class="active" style="background:linear-gradient(160deg,${k.color}38,var(--card) 65%);border-color:${k.color}66"><div class="top">${sym(s.cat)}<span class="t num" data-start="${s.start}">${hms(Date.now()-s.start)}</span><button class="stop" data-act="stop" data-id="${s.id}">Stop</button></div>`;
     if(lim)h+=`<div class="bar"><i data-bar="${s.start}" data-lim="${lim}" style="background:${k.color}"></i></div><div class="meta"><span data-barlbl="${s.start}" data-lim="${lim}"></span><span class="num">próg ${dur(lim*60000)}</span></div>`;
+    if((s.cat==='D'||s.cat==='F')&&S.settings.msgs&&S.msg){const pp=(S.msg.pools.tip_pre||[]);if(pp.length){const ix=[...s.id].reduce((a,ch)=>a+ch.charCodeAt(0),0)%pp.length;h+=`<div class="ptip${S.settings.discreet?' blur':''}" data-act="reveal">💡 ${esc(pp[ix])}</div>`;}}
     if(s.target)h+=`<div class="bar tbar"><i data-tbar="${s.start}" data-tgt="${s.target}" data-sid="${s.id}"></i></div><div class="meta"><span data-tlbl="${s.start}" data-tgt="${s.target}"></span><span class="num">cel ${dur(s.target*60000)}</span></div>`;
     h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div><div class="tgt"><button data-act="tgt" data-id="${s.id}">🎯 ${s.target?'zmień cel':'ustaw cel'}</button></div></div>`;
   }
-  h+=todayCard(g)+seasonCard(g)+monthCard(g);
+  h+=todayCard(g)+tipCard()+seasonCard(g)+monthCard(g);
   h+='<div class="grid">';
   for(const c of CATS){
     const a=act.find(s=>s.cat===c);
@@ -1115,6 +1125,18 @@ const ACT={
   tab(d){tab=d.tab;window.scrollTo(0,0);render();},
   start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();quick('start_'+d.cat,{});celebrate();},
   reveal(d,t){t.classList.toggle('blur');},
+  tips(){const T=allTips();if(!T.length)return;let off=tipOfDay().i;let cat=null;
+    const list=()=>cat?T.map((x,i)=>[x,i]).filter(([x])=>x[0]===cat):T.map((x,i)=>[x,i]);
+    openSheet(()=>{const L2=list();let pos=L2.findIndex(([,i])=>i===off);if(pos<0){pos=0;off=L2[0][1];}const [x]=L2[pos];
+      return `<div class="grab"></div><h3>💡 Tipy</h3><div class="chips" style="margin:8px 0 6px"><button class="chip${!cat?' on':''}" data-x="cat" data-v="">wszystkie</button>${TIPCATS.filter(([k])=>S.msg.pools[k]&&S.msg.pools[k].length).map(([k,l])=>`<button class="chip${cat===l?' on':''}" data-x="cat" data-v="${l}">${l}</button>`).join('')}</div>
+        <span class="f">${esc(x[0]).toUpperCase()} · ${pos+1} / ${L2.length}</span><button class="tipbig${S.settings.discreet?' blur':''}" data-x="rev">${esc(x[1])}</button>
+        <div class="row2"><button class="link" data-x="prev">‹ poprzedni</button><button class="link" data-x="next">następny ›</button></div><button class="save" data-x="ok">Zamknij</button>`;},
+    (x,v,redraw,b)=>{const L2=list();let pos=L2.findIndex(([,i])=>i===off);
+      if(x==='rev'){b.classList.toggle('blur');return;}
+      if(x==='cat'){cat=v||null;const L3=list();off=L3.length?L3[0][1]:off;redraw();}
+      else if(x==='next'){off=L2[(pos+1)%L2.length][1];redraw();}
+      else if(x==='prev'){off=L2[(pos-1+L2.length)%L2.length][1];redraw();}
+      else closeSheet();});},
   theme(d){S.settings.theme=d.v;save();render();},
   emo(d){S.cats[d.cat].emoji=d.v;save();render();},
   ydy(d){hist.day=d.v;const [y,m]=d.v.split('-').map(Number);hist.y=y;hist.m=m-1;tab='hist';render();},
