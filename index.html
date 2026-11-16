@@ -177,6 +177,26 @@ td.r,th.r{text-align:right}
 .bdg small{font-size:10px;color:var(--tx3);display:block;margin-top:2px}
 .xpt{font-size:12px;color:var(--tx2);line-height:1.6}
 #cf{position:fixed;inset:0;pointer-events:none;z-index:60}
+.chl{border-top:1px solid var(--line);padding:9px 0 4px}
+.chl .t{display:flex;align-items:center;gap:8px;font-size:13px}
+.chl .t span{flex:1}.chl .t em{font-style:normal;font-size:11px;font-weight:700;color:#FFB35C;background:#3A2E22;border-radius:8px;padding:2px 7px}
+.chl.ok .t em{color:#7FAE8E;background:#24332A}
+.pbar{height:6px;border-radius:3px;background:#36363A;margin:6px 0 2px;overflow:hidden}.pbar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#FFB35C,#FF7A2F)}
+.chl.ok .pbar i{background:#7FAE8E}
+.chl small{font-size:11px;color:var(--tx3)}
+.sech{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 2px;display:flex;justify-content:space-between}
+.dice{background:linear-gradient(160deg,#FFB35C,#FF7A2F);color:#2a1a08;border-radius:10px;padding:5px 10px;font-weight:700;font-size:12px}
+.tgt{display:flex;gap:6px;align-items:center;margin-top:8px}
+.tgt button{background:var(--card2);border-radius:9px;padding:5px 9px;font-size:12px;color:var(--tx2)}
+.tbar i{background:linear-gradient(90deg,#7FAE8E,#5FD08E)!important}
+.wr{background:linear-gradient(150deg,#3B2B5E,#7A3E6E 55%,#C2553F);border-radius:20px;padding:18px;margin-bottom:12px}
+.wr h4{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#FFD9C2;font-weight:600}
+.wr .bigx{font-size:44px;font-weight:800;line-height:1.1;margin:4px 0}
+.wr .cmp{font-size:13px;color:#FFE7D6}
+.wtiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wt{background:var(--card);border-radius:14px;padding:10px 12px}.wt small{display:block;font-size:11px;color:var(--tx2)}.wt b{font-size:20px;font-weight:700}
+.wkcmp{background:var(--card);border-radius:14px;padding:12px;margin-top:10px;font-size:13px}
+.wkcmp .row{display:flex;justify-content:space-between;margin:6px 0 4px}
 .sym.gi{padding:0}.sym.gi svg{width:74%;height:74%}
 .btn .sym.gi{width:46px;height:46px;border-radius:13px}
 .active .sym.gi{width:34px;height:34px;border-radius:10px}
@@ -262,6 +282,8 @@ function cleanSvg(str){try{
   const walk=el=>{for(const ch of [...el.children]){if(!SVG_TAGS.has(ch.nodeName.toLowerCase())){ch.remove();continue;}walk(ch);}
     for(const a of [...el.attributes]){const n=a.name.toLowerCase(),v=a.value;if(!SVG_ATTR.test(n)||/javascript:|data:|url\(\s*['"]?(?!#)/i.test(v))el.removeAttribute(a.name);}};
   walk(root);return new XMLSerializer().serializeToString(root);}catch(e){return null;}}
+const LBL={ao:'AO',ao_long:'Wynik ★',sw:'S',sw_long:'Opcja S',night:'Noc'};
+const L=k=>(S&&S.msg&&S.msg.labels&&S.msg.labels[k])||LBL[k]||k;
 const gfxOn=()=>!!(S&&S.settings.gfx!==false&&!S.settings.discreet&&S.msg&&S.msg.icons);
 const icon=n=>gfxOn()&&S.msg.icons[n]?S.msg.icons[n]:'';
 function levelMedal(L){const h=(r,cy)=>Array.from({length:6},(_,i)=>{const a=(i*60-90)*Math.PI/180;return (50+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);}).join(' ');
@@ -293,6 +315,7 @@ function migrate(){
   S.settings=Object.assign({autolock:60,discreet:true,msgs:true},S.settings||{});
   S.goals=Object.assign({plugDaily:true,dPerWeek:1,bigPerWeek:1,rPerWeek:3},S.goals||{});
   S.seen=Object.assign({week:'',ms:''},S.seen||{});
+  S.plan=Object.assign({mode:'off',n:7,p:20},S.plan||{});S.draws=S.draws||{};
   if(!S.created){const t=[...S.sessions.map(x=>x.start),...S.events.map(x=>x.at)];S.created=t.length?Math.min(...t):Date.now();}
   if(S.msg&&!(S.msg.pools&&typeof S.msg.pools==='object'))S.msg=null;
 }
@@ -357,11 +380,12 @@ const DEFMSG={pools:{
   start_R:[],start_P:[],start_D:[],
   all_done:['Wszystko na dziś zrobione.'],
   week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.'],
+  challenge:['Wyzwanie zaliczone.'],night:['Noc zapisana. Razem: {n}.'],draw_yes:['Wylosowano: dziś wolno.'],draw_no:['Wylosowano: dziś nie.'],ejac_plan:['Zgodnie z planem.'],ejac_off:['Poza planem — zapisane.'],
   streak_ext:['Seria: {seria} dni.'],streak_risk:['Seria {seria} dni czeka na dzisiejszy wpis.'],streak_freeze_used:['Zamrożenie uratowało serię.'],
   level_up:['Poziom {poziom}.'],badge:['Nowa odznaka: {nazwa}.']
 }};
 const MILESTONES=[3,5,7,10,14,21,30,45,60,90,120,180,270,365];
-const lastPick={};let headMsg={key:'',text:''};
+const lastPick={},tgtSeen=new Set();let headMsg={key:'',text:''};
 function poolOf(names){names=[].concat(names);
   if(S.settings.msgs&&S.msg)for(const n of names){const p=S.msg.pools[n];if(Array.isArray(p)&&p.length)return [n,p];}
   for(const n of names){const p=DEFMSG.pools[n];if(p&&p.length)return [n,p];}return [null,[]];}
@@ -405,7 +429,13 @@ function todayCard(g){
   if(G.bigPerWeek)h+=row(st.big>=G.bigPerWeek,`${bigName} w tym tygodniu`,`${st.big}/${G.bigPerWeek}`);
   if(G.rPerWeek)h+=row(st.r>=G.rPerWeek,`${alias('R')} w tym tygodniu`,`${st.r}/${G.rPerWeek}`);
   h+=`<div class="ck"><span class="ckm ok">◎</span><span>bez ${alias('E')}</span><em class="num">${st.streak} d</em></div>`;
-  if(st.ao)h+=`<div class="ck"><span class="ckm ok">★</span><span>AO w tym tygodniu</span><em class="num">${st.ao}</em></div>`;
+  const ps=planState();
+  if(ps.mode==='every')h+=`<div class="ck"><span class="ckm${ps.allowed?' ok':''}">${ps.allowed?'✓':'⏳'}</span><span>plan ${alias('E')}</span><em class="num">${ps.allowed?'dziś wolno':'za '+ps.left+' d'}</em></div>`;
+  if(ps.mode==='dice')h+=`<div class="ck"><span class="ckm${ps.allowed?' ok':''}">🎲</span><span>plan ${alias('E')}</span>${ps.drawn?`<em>${ps.allowed?'dziś wolno':'dziś nie'}</em>`:'<button class="dice" data-act="draw">Losuj</button>'}</div>`;
+  if(g&&g.todayCh.length){const wk=g.todayCh[0].mult>1;h+=`<div class="sech"><span>Wyzwania dnia</span><span>${wk?'weekend ×2':''}</span></div>`;
+    for(const c of g.todayCh){const pc=Math.min(100,c.v/c.t*100),vv=c.u==='h'?fnum(c.v,1):Math.floor(c.v);
+      h+=`<div class="chl${c.done?' ok':''}"><div class="t"><span>${c.done?'✓ ':''}${esc(c.lab)}</span><em>+${c.xp} XP</em></div><div class="pbar"><i style="width:${pc}%"></i></div><small class="num">${vv} / ${c.t}${c.u?' '+c.u:''}</small></div>`;}}
+  if(st.ao)h+=`<div class="ck"><span class="ckm ok">★</span><span>${esc(L('ao'))} w tym tygodniu</span><em class="num">${st.ao}</em></div>`;
   return h+'</div>';
 }
 function showMsg(text,opt={}){
@@ -421,10 +451,15 @@ function weekReport(ws){
   const line=`${alias('P')}: ${w.plugDays}/7 dni · ${alias('D')}: ${w.d} · trening: ${w.big} · ${alias('R')}: ${w.r} · AO: ${w.ao} · ${alias('E')}: ${w.e}`;
   return [pick(pool,{}),`Poprzedni tydzień — cele: ${met}/${goals.length}<br>${line}`];
 }
+function reportOpen(d,q){reportSheet(d.getFullYear(),d.getMonth());const box=$('#sheet .sheet'),orig=box.onclick;box.onclick=ev=>{const b=ev.target.closest('[data-x]');if(b&&b.dataset.x==='ok'){ev.preventDefault();closeSheet();checksRest(q);}else orig(ev);};}
+function checksRest(q){const st=status(),ms=MILESTONES.filter(m=>st.streak>=m).pop()||0,mk=(st.lastE||S.created)+':'+ms;
+  if(ms&&S.seen.ms!==mk){q.push([pick(['streak_'+ms,'streak'],{dni:st.streak}),null]);S.seen.ms=mk;}save();
+  const run=()=>{const t=q.shift();if(t)showMsg(t[0],{sub:t[1],then:run});else celebrate();};run();}
 function checks(){
   const st=status(),q=[],wk=dayKey(weekStart(Date.now()));
   if(S.seen.week&&S.seen.week!==wk)q.push(weekReport(weekStart(Date.now())-1));
   S.seen.week=wk;
+  const mkM=new Date().getFullYear()+'-'+new Date().getMonth();if(S.seen.month&&S.seen.month!==mkM){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);S.seen.month=mkM;save();return reportOpen(d,q);}S.seen.month=mkM;
   const ms=MILESTONES.filter(m=>st.streak>=m).pop()||0,mk=(st.lastE||S.created)+':'+ms;
   if(ms&&S.seen.ms!==mk){q.push([pick(['streak_'+ms,'streak'],{dni:st.streak}),null]);S.seen.ms=mk;}
   save();
@@ -440,7 +475,7 @@ function afterFinish(s){
 }
 
 /* ---------- grywalizacja ---------- */
-const XPV={P:10,Pbig:40,D:30,AO:50,R:10,E:25,week:100};
+const XPV={P:10,Pbig:40,D:30,AO:50,R:10,E:25,Eplan:50,Eoff:10,SW:20,night:30,week:100};
 const STREAK_MS=[7,14,30,50,100,150,200,365];
 const FLAME='<svg viewBox="0 0 64 64"><path class="fo" d="M33 3c2 9-6 14-6 22 0 4 3 7 6.5 7 4.5 0 6.5-4 5.5-9.5C46 27 52 35 52 44a20 20 0 0 1-40 0c0-12 8.5-19 13-25C28 14 31 9 33 3z"/><path class="fi" d="M32 30c1 5-4 8-4 13 0 3 2 5 4.5 5S37 46 36.5 42c3 2 5.5 5.5 5.5 9a10 10 0 0 1-20 0c0-7 5-11 7-15 1.2-2 2.3-4 3-6z"/></svg>';
 const BADGES=[
@@ -452,7 +487,11 @@ const BADGES=[
  ['p_100h','⏱️','100 godzin','100 h z P',g=>g.pHours>=100],['p_500h','⏳','500 godzin','500 h z P',g=>g.pHours>=500],
  ['wk_1','✅','Idealny tydzień','wszystkie cele tygodnia',g=>g.perfectWeeks>=1],['wk_4','📅','4 idealne tygodnie','4× komplet',g=>g.perfectWeeks>=4],['wk_12','🗓️','12 idealnych tygodni','12× komplet',g=>g.perfectWeeks>=12],
  ['e_10','🎉','Celebrant','10× E',g=>g.e>=10],['r_50','⭕','50× R','50 sesji R',g=>g.r>=50],['fr_1','❄️','Ratunek','pierwsze zamrożenie',g=>g.used>=1],
- ['lv_10','🚀','Poziom 10','',g=>g.level>=10],['lv_20','🪐','Poziom 20','',g=>g.level>=20]
+ ['lv_10','🚀','Poziom 10','',g=>g.level>=10],['lv_20','🪐','Poziom 20','',g=>g.level>=20],
+ ['nt_1','🌙','Pierwsza noc','1 noc z P',g=>g.nights>=1],['nt_7','🌛','7 nocy','7 nocy z P',g=>g.nights>=7],['nt_30','🌌','30 nocy','30 nocy z P',g=>g.nights>=30],
+ ['sw_1','💧','S ×1','1× S',g=>g.sw>=1],['sw_10','💦','S ×10','10× S',g=>g.sw>=10],['sw_50','🌊','S ×50','50× S',g=>g.sw>=50],
+ ['ch_10','🎯','10 wyzwań','10 wyzwań dnia',g=>g.chDone>=10],['ch_50','🏅','50 wyzwań','50 wyzwań dnia',g=>g.chDone>=50],
+ ['tg_10','⏱️','10 celów czasu','10× cel sesji',g=>g.targets>=10],['pl_5','🎲','Zgodnie z planem','5× E w planie',g=>g.ePlan>=5]
 ];
 const lvlReq=L=>50*L*(L-1);
 function levelName(L){const a=S.msg&&S.msg.levels;return Array.isArray(a)&&a.length?a[Math.min(L,a.length)-1]:'';}
@@ -460,29 +499,93 @@ function badgeName(b){return (S.msg&&S.msg.badges&&S.msg.badges[b[0]])||b[2];}
 function goalsMet(ws){const w=weekStats(ws),G=S.goals,gl=[];
   if(G.plugDaily)gl.push(w.plugDays>=6);if(G.dPerWeek)gl.push(w.d>=G.dPerWeek);if(G.bigPerWeek)gl.push(w.big>=G.bigPerWeek);if(G.rPerWeek)gl.push(w.r>=G.rPerWeek);
   return[gl.filter(Boolean).length,gl.length,w];}
+function rng(seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619);return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return ((h>>>0)%10000)/10000;};}
+const CH={
+  plugH:{mk:r=>{const n=[2,3,4][r()*3|0];return{n,xp:10+n*8};},lab:c=>`${alias('P')} łącznie ${c.n} h`,prog:(c,d)=>[d.pH,c.n,'h']},
+  dSess:{mk:()=>({n:1,xp:40}),lab:()=>`trening ${alias('D')}`,prog:(c,d)=>[d.d,1,'']},
+  ring:{mk:r=>{const n=[30,45,60][r()*3|0];return{n,xp:20+(n/3|0)};},lab:c=>`${alias('R')} ${c.n} min`,prog:(c,d)=>[d.rMin,c.n,'min']},
+  dAO:{mk:()=>({n:1,xp:70}),lab:()=>`${alias('D')} z ${L('ao')}`,prog:(c,d)=>[d.ao,1,'']},
+  big:{mk:r=>{const n=[15,20,30][r()*3|0];return{n,xp:30+n};},lab:c=>`trening duży ${c.n} min`,prog:(c,d)=>[d.bigMin,c.n,'min']},
+  combo:{mk:()=>({n:30,xp:50}),lab:c=>`${alias('R')} + ${alias('P')} razem ${c.n} min`,prog:(c,d)=>[d.comboMin,c.n,'min']}
+};
+function challengesFor(ds){
+  const r=rng('ch'+dayKey(ds)),G=S.goals,hasBig=S.items.some(i=>i.big);
+  const p1=['plugH','dSess'].concat(G.rPerWeek?['ring']:[]),p2=['dAO'].concat(hasBig?['big']:[]).concat(G.rPerWeek?['combo']:[]);
+  const dw=new Date(ds).getDay(),mult=(dw===0||dw===6)?2:1;
+  return [p1,p2].map(pl=>{const id=pl[r()*pl.length|0],c=CH[id].mk(r);return{id,n:c.n,xp:c.xp*mult,mult};});
+}
+function dayData(ds,now){
+  const de=addDays(ds,1);let pH=0,d=0,ao=0,bigMin=0,rMin=0,comboMin=0;const P=[],R=[];
+  for(const s of S.sessions){const e=Math.min(s.end||now,now);if(e<ds||s.start>=de)continue;
+    if(s.cat==='P'){if(isBig(s)){if(s.start>=ds)bigMin=Math.max(bigMin,(e-s.start)/6e4);}else pH+=Math.max(0,Math.min(e,de)-Math.max(s.start,ds))/36e5;P.push([s.start,e]);}
+    else if(s.cat==='D'){if(s.start>=ds){d++;ao+=s.ao||0;}}
+    else if(s.cat==='R'){if(s.start>=ds)rMin=Math.max(rMin,(e-s.start)/6e4);R.push([s.start,e]);}}
+  for(const [a,b] of R)for(const [c,e2] of P){const o=Math.min(b,e2,de)-Math.max(a,c,ds);if(o>0)comboMin+=o/6e4;}
+  return{pH,d,ao,bigMin,rMin,comboMin};
+}
+function chProg(c,dd){const [v,t,u]=CH[c.id].prog(c,dd);return{v,t,u,done:v>=t};}
+function nightsOf(s,now){const out=[],end=Math.min(s.end||now,now);let d=dayStart(s.start);while(d<=end){if(s.start<=d+2*36e5&&end>=d+5*36e5)out.push(d);d=addDays(d,1);}return out;}
+function planState(now=Date.now()){
+  const P=S.plan||{mode:'off'};if(P.mode==='off')return{mode:'off'};
+  const lastE=S.events.reduce((m,e)=>Math.max(m,e.at),0),since=Math.floor((dayStart(now)-dayStart(lastE||S.created))/864e5);
+  if(P.mode==='every'){const left=Math.max(0,P.n-since);return{mode:'every',allowed:left===0,left};}
+  const k=dayKey(now),d=S.draws&&S.draws[k];return{mode:'dice',drawn:d!=null,allowed:d===true};
+}
 function computeGame(now=Date.now()){
-  const today=dayStart(now),tk=dayKey(today),done=new Set();
+  const today=dayStart(now),tk=dayKey(today),done=new Set(),log=[];const add=(t,x,k)=>{if(x)log.push([t,x,k]);};
   const act=S.sessions.filter(s=>s.cat==='P'||s.cat==='D');
   for(const s of act){let d=dayStart(s.start);const end=Math.min(s.end||now,now);while(d<=end){done.add(dayKey(d));d=addDays(d,1);}}
-  let streak=0,best=0,freezes=0,used=0,run=0,bonus=0;const hist={};
+  let streak=0,best=0,freezes=0,used=0,run=0;const hist={};
   if(act.length){let d=dayStart(Math.min(...act.map(s=>s.start)));
     while(d<today){const k=dayKey(d);
-      if(done.has(k)){streak++;run++;hist[k]='done';if(run%7===0&&freezes<2)freezes++;if(STREAK_MS.includes(streak))bonus+=streak*10;}
+      if(done.has(k)){streak++;run++;hist[k]='done';if(run%7===0&&freezes<2)freezes++;if(STREAK_MS.includes(streak))add(d,streak*10,'streak');}
       else if(freezes>0&&streak>0){freezes--;used++;hist[k]='frozen';}
       else{streak=0;run=0;hist[k]='miss';}
       best=Math.max(best,streak);d=addDays(d,1);}}
-  const todayDone=done.has(tk);if(todayDone){streak++;hist[tk]='done';if(STREAK_MS.includes(streak))bonus+=streak*10;}best=Math.max(best,streak);
-  let xp=bonus,ao=0,big=0,dn=0,pH=0,r=0;
+  const todayDone=done.has(tk);if(todayDone){streak++;hist[tk]='done';if(STREAK_MS.includes(streak))add(today,streak*10,'streak');}best=Math.max(best,streak);
+  let ao=0,big=0,dn=0,pH=0,r=0,targets=0;const nights=new Set();
   for(const s of S.sessions){const h=s.end?(s.end-s.start)/36e5:0;
-    if(s.cat==='P'){if(isBig(s)){big++;xp+=XPV.Pbig+Math.min(20,Math.floor(h*2)*5);}else xp+=XPV.P+Math.min(16,Math.floor(h)*2);pH+=h;}
-    else if(s.cat==='D'){dn++;ao+=s.ao||0;xp+=XPV.D+(s.ao||0)*XPV.AO;}
-    else if(s.cat==='R'){r++;xp+=XPV.R+Math.min(10,Math.floor(h*4));}}
-  const E=S.events.map(e=>e.at).sort((a,b)=>a-b);xp+=E.length*XPV.E;
-  let prev=S.created,bestNoE=0;const gaps=[];for(const t of E){gaps.push((t-prev)/864e5);prev=t;}gaps.push((now-prev)/864e5);
-  for(const gp of gaps){bestNoE=Math.max(bestNoE,gp);for(const m of MILESTONES)if(gp>=m)xp+=m*5;}
-  let pw=0;for(let w=weekStart(S.created);w<weekStart(now);w=addDays(w,7)){const [m,t]=goalsMet(w);if(t&&m===t)pw++;}xp+=pw*XPV.week;
-  xp=Math.round(xp);let L=1;while(lvlReq(L+1)<=xp)L++;
-  return{xp,level:L,from:lvlReq(L),to:lvlReq(L+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw};
+    if(s.cat==='P'){if(isBig(s)){big++;add(s.start,XPV.Pbig+Math.min(20,Math.floor(h*2)*5),'P');}else add(s.start,XPV.P+Math.min(16,Math.floor(h)*2),'P');pH+=h;for(const n of nightsOf(s,now))nights.add(n);}
+    else if(s.cat==='D'){dn++;ao+=s.ao||0;add(s.start,XPV.D+(s.ao||0)*XPV.AO,'D');}
+    else if(s.cat==='R'){r++;add(s.start,XPV.R+Math.min(10,Math.floor(h*4)),'R');}
+    if(s.target&&s.end&&s.end-s.start>=s.target*6e4){targets++;add(s.end,15+Math.floor(s.target/10),'target');}}
+  for(const n of nights)add(n+6*36e5,XPV.night,'night');
+  let sw=0,ePlan=0;const E=[...S.events].sort((a,b)=>a.at-b.at);
+  for(const e of E){add(e.at,e.plan===true?XPV.Eplan:e.plan===false?XPV.Eoff:XPV.E,'E');if(e.plan===true)ePlan++;if(e.sw){sw++;add(e.at,XPV.SW,'sw');}}
+  let prev=S.created,bestNoE=0;const gaps=[];for(const e of E){gaps.push([prev,e.at]);prev=e.at;}gaps.push([prev,now]);
+  for(const [a,b] of gaps){const gp=(b-a)/864e5;bestNoE=Math.max(bestNoE,gp);for(const m of MILESTONES)if(gp>=m)add(a+m*864e5,m*5,'noe');}
+  let pw=0;for(let w=weekStart(S.created);w<weekStart(now);w=addDays(w,7)){const [m,t]=goalsMet(w);if(t&&m===t){pw++;add(addDays(w,7)-1,XPV.week,'week');}}
+  let chDone=0,todayCh=[];const all=[...S.sessions.map(x=>x.start),...S.events.map(x=>x.at)];
+  for(let d=all.length?dayStart(Math.min(...all)):today;d<=today;d=addDays(d,1)){
+    const chs=challengesFor(d),dd=dayData(d,now);
+    for(const c of chs){const pr=chProg(c,dd);if(pr.done){chDone++;add(d+12*36e5,c.xp,'ch');}if(d===today)todayCh.push({...c,...pr,lab:CH[c.id].lab(c)});}}
+  const xp=Math.round(log.reduce((a,x)=>a+x[1],0));let Lv=1;while(lvlReq(Lv+1)<=xp)Lv++;
+  return{xp,level:Lv,from:lvlReq(Lv),to:lvlReq(Lv+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw,
+    nights:nights.size,nightSet:nights,sw,ePlan,chDone,todayCh,targets,log};
+}
+function xpBetween(g,a,b){return Math.round(g.log.filter(x=>x[0]>=a&&x[0]<b).reduce((s,x)=>s+x[1],0));}
+function monthReport(y,m){
+  const g=computeGame(),a=new Date(y,m,1).getTime(),b=new Date(y,m+1,1).getTime(),pa=new Date(y,m-1,1).getTime();
+  const inM=t=>t>=a&&t<b,ss=S.sessions.filter(x=>inM(x.start)),ev=S.events.filter(x=>inM(x.at));
+  const xp=xpBetween(g,a,b),pxp=xpBetween(g,pa,a);
+  const pH=ss.filter(x=>x.cat==='P'&&x.end).reduce((s,x)=>s+(x.end-x.start)/36e5,0);
+  let run=0,bestRun=0;for(let d=a;d<b&&d<=Date.now();d=addDays(d,1)){if(g.hist[dayKey(d)]==='done'){run++;bestRun=Math.max(bestRun,run);}else if(g.hist[dayKey(d)]!=='frozen')run=0;}
+  const cnt={};for(const x of ss)if(x.itemId)cnt[x.itemId]=(cnt[x.itemId]||0)+1;const top=Object.entries(cnt).sort((p,q)=>q[1]-p[1])[0];
+  let bestW=0,bestWk=null;for(let w=weekStart(a);w<b;w=addDays(w,7)){const x=xpBetween(g,w,addDays(w,7));if(x>bestW){bestW=x;bestWk=w;}}
+  return{y,m,xp,pxp,pH,bestRun,ao:ss.reduce((s,x)=>s+(x.ao||0),0),d:ss.filter(x=>x.cat==='D').length,big:ss.filter(x=>x.cat==='P'&&isBig(x)).length,r:ss.filter(x=>x.cat==='R').length,
+    e:ev.length,sw:ev.filter(x=>x.sw).length,plan:ev.filter(x=>x.plan===true).length,nights:[...g.nightSet].filter(inM).length,
+    ch:g.log.filter(x=>x[2]==='ch'&&inM(x[0])).length,top:top?itemName(top[0]):'',topN:top?top[1]:0,bestW,bestWk};
+}
+function reportSheet(y,m){
+  const R=monthReport(y,m),diff=R.pxp?Math.round((R.xp-R.pxp)/R.pxp*100):null;
+  const T=(l,v)=>`<div class="wt"><small>${l}</small><b class="num">${v}</b></div>`;
+  openSheet(()=>`<div class="grab"></div><div class="row2" style="margin:0 0 8px"><button class="link" data-x="prev">‹ poprzedni</button><button class="link" data-x="next">następny ›</button></div>
+    <div class="wr"><h4>${MNOM[m]} ${y}</h4><div class="bigx num">${R.xp} XP</div><div class="cmp">${diff==null?'pierwszy miesiąc':diff>=0?`▲ ${diff}% vs poprzedni miesiąc`:`▼ ${-diff}% vs poprzedni miesiąc`}</div></div>
+    <div class="wtiles">${T('najdłuższa seria w miesiącu',R.bestRun+' d')}${T(esc(L('ao_long')),R.ao)}${T(alias('P')+' łącznie',fnum(R.pH,0)+' h')}${T('noce z '+alias('P'),R.nights)}
+    ${T('treningi '+alias('D'),R.d)}${T('treningi duże',R.big)}${T(alias('R'),R.r)}${T(alias('E')+' (w planie)',`${R.e} (${R.plan})`)}${T(esc(L('sw_long')),R.sw)}${T('wyzwania dnia',R.ch)}
+    ${T(R.top?'najczęściej używany ('+R.topN+'×)':'najczęściej używany',R.top?esc(R.top):'—')}${T(R.bestWk?`najlepszy tydzień (od ${new Date(R.bestWk).getDate()}.${pad2(new Date(R.bestWk).getMonth()+1)})`:'najlepszy tydzień',R.bestWk?R.bestW+' XP':'—')}</div>
+    <button class="save" data-x="ok" style="margin-top:14px">Zamknij</button>`,
+  x=>{if(x==='prev'){closeSheet();const d=new Date(y,m-1,1);reportSheet(d.getFullYear(),d.getMonth());}else if(x==='next'){closeSheet();const d=new Date(y,m+1,1);reportSheet(d.getFullYear(),d.getMonth());}else closeSheet();});
 }
 function heroCard(g){
   const ws=weekStart(Date.now()),tk=dayKey(Date.now()),DD=['pn','wt','śr','cz','pt','sb','nd'];let dots='';
@@ -522,6 +625,10 @@ function celebrate(then){
   if(sn.level==null)sn.level=g.level;else if(g.level>sn.level){sn.level=g.level;const nm=levelName(g.level);q.push({conf:true,icon:levelMedal(g.level),big:'⬆️ '+g.level,num:true,sub:nm?esc(nm):'nowy poziom',text:msgOn?pick('level_up',{poziom:g.level,nazwa:nm||g.level}):''});}
   const un=BADGES.filter(b=>b[4](g)).map(b=>b[0]);
   if(!Array.isArray(sn.badges))sn.badges=un;else for(const id of un)if(!sn.badges.includes(id)){sn.badges.push(id);const b=BADGES.find(z=>z[0]===id);q.push({conf:true,icon:icon('b_'+b[0]),big:b[1],sub:'Nowa odznaka: <b>'+esc(badgeName(b))+'</b>',text:msgOn?pick('badge',{nazwa:badgeName(b)}):''});}
+  sn.ch=Array.isArray(sn.ch)?sn.ch.filter(k=>k.startsWith(tk)):null;
+  if(sn.ch==null)sn.ch=g.todayCh.filter(c=>c.done).map(c=>tk+':'+c.id);
+  else for(const c of g.todayCh)if(c.done&&!sn.ch.includes(tk+':'+c.id)){sn.ch.push(tk+':'+c.id);q.push({conf:true,icon:icon('cel_ch'),big:'🎯',sub:`Wyzwanie zaliczone: <b>${esc(c.lab)}</b> · +${c.xp} XP`,text:msgOn?pick('challenge',{}):''});}
+  if(sn.nights==null)sn.nights=g.nights;else if(g.nights>sn.nights){sn.nights=g.nights;q.push({conf:true,icon:icon('cel_night'),big:'🌙',sub:`Noc z ${alias('P')} · +${XPV.night} XP`,text:msgOn?pick('night',{n:g.nights}):''});}
   if(sn.xp!=null&&g.xp>sn.xp)toast(`+${g.xp-sn.xp} XP`);sn.xp=g.xp;
   save();
   const run=()=>{const t=q.shift();if(!t){if(then)then();else render();return;}if(t.conf)confetti();showCard(t,run);};run();
@@ -535,7 +642,8 @@ function renderNow(){
     const k=S.cats[s.cat],lim=k.limit,it=itemName(s.itemId);
     h+=`<div class="active"><div class="top">${sym(s.cat)}<span class="t num" data-start="${s.start}">${hms(Date.now()-s.start)}</span><button class="stop" data-act="stop" data-id="${s.id}">Stop</button></div>`;
     if(lim)h+=`<div class="bar"><i data-bar="${s.start}" data-lim="${lim}" style="background:${k.color}"></i></div><div class="meta"><span data-barlbl="${s.start}" data-lim="${lim}"></span><span class="num">próg ${dur(lim*60000)}</span></div>`;
-    h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div></div>`;
+    if(s.target)h+=`<div class="bar tbar"><i data-tbar="${s.start}" data-tgt="${s.target}" data-sid="${s.id}"></i></div><div class="meta"><span data-tlbl="${s.start}" data-tgt="${s.target}"></span><span class="num">cel ${dur(s.target*60000)}</span></div>`;
+    h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div><div class="tgt"><button data-act="tgt" data-id="${s.id}">🎯 ${s.target?'zmień cel':'ustaw cel'}</button></div></div>`;
   }
   h+=todayCard(g);
   h+='<div class="grid">';
@@ -553,6 +661,9 @@ function updateLive(){
   if(!S||tab!=='now')return;const now=Date.now();
   document.querySelectorAll('[data-start]').forEach(el=>el.textContent=hms(now-+el.dataset.start));
   document.querySelectorAll('[data-bar]').forEach(el=>{const e=now-+el.dataset.bar,L=+el.dataset.lim*60000;el.style.width=Math.min(100,e/L*100)+'%';el.classList.toggle('over',e>L);});
+  document.querySelectorAll('[data-tbar]').forEach(el=>{const e=now-+el.dataset.tbar,T=+el.dataset.tgt*60000;el.style.width=Math.min(100,e/T*100)+'%';
+    if(e>=T&&!tgtSeen.has(el.dataset.sid)){tgtSeen.add(el.dataset.sid);if(Date.now()-+el.dataset.tbar-T<5000){toast('🎯 Cel osiągnięty!');confetti();}}});
+  document.querySelectorAll('[data-tlbl]').forEach(el=>{const e=now-+el.dataset.tlbl,T=+el.dataset.tgt*60000;el.innerHTML=e<T?`do celu <b class="num">${hms(T-e)}</b>`:'<b style="color:#7FAE8E">✓ cel osiągnięty</b>';});
   document.querySelectorAll('[data-barlbl]').forEach(el=>{const e=now-+el.dataset.barlbl,L=+el.dataset.lim*60000;el.innerHTML=e<L?`do progu <b class="num">${hms(L-e)}</b>`:`<b class="warn num">ponad próg o ${hms(e-L)}</b>`;el.closest('.active').classList.toggle('over',e>L);});
 }
 
@@ -579,20 +690,21 @@ function renderHist(){
 
 function renderStats(){
   const c=stat.cat,isS=c!=='E',now=Date.now();
-  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:s.end-s.start,r:s.rating,item:s.itemId,ao:s.ao||0})):S.events.map(e=>({t:e.at,r:e.rating}))).sort((a,b)=>a.t-b.t);
+  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:s.end-s.start,r:s.rating,item:s.itemId,ao:s.ao||0})):S.events.map(e=>({t:e.at,r:e.rating,sw:!!e.sw,plan:e.plan}))).sort((a,b)=>a.t-b.t);
   const from=stat.range?now-stat.range*864e5:(all.length?all[0].t:now);
-  const L=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=L.length;
-  const rated=L.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
+  const LL=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=LL.length;
+  const rated=LL.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
   const cur=all.length?now-all[all.length-1].t:null;
-  let longest=0;for(let i=1;i<L.length;i++)longest=Math.max(longest,L[i].t-L[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
+  let longest=0;for(let i=1;i<LL.length;i++)longest=Math.max(longest,L[i].t-L[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
   let h=`<div class="hdr"><b>Statystyki</b></div>`;
   h+=`<div class="seg">${CATS.map(x=>`<button class="${x===c?'on':''}" data-act="sc" data-v="${x}" style="color:${S.cats[x].color}">${alias(x)}</button>`).join('')}</div>`;
   h+=`<div class="seg">${[[30,'30 dni'],[90,'90 dni'],[365,'rok'],[0,'całość']].map(([v,l])=>`<button class="${stat.range===v?'on':''}" data-act="sr" data-v="${v}">${l}</button>`).join('')}</div>`;
   const K=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
   h+='<div class="kpis">'+K('liczba',n)+K('na tydzień',fnum(n/(days/7)));
-  if(isS){const ds=L.map(x=>x.d).sort((a,b)=>a-b),tot=ds.reduce((s,x)=>s+x,0),med=ds.length?(ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2):0;
+  if(isS){const ds=LL.map(x=>x.d).sort((a,b)=>a-b),tot=ds.reduce((s,x)=>s+x,0),med=ds.length?(ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2):0;
     h+=K('łączny czas',n?dur(tot):'—')+K('mediana sesji',n?dur(med):'—')+K('najdłuższa sesja',n?dur(ds[ds.length-1]):'—')+K('średnio / tydzień',n?dur(tot/(days/7)):'—');}
-  if(c==='D')h+=K('orgazmy analne',L.reduce((a,x)=>a+x.ao,0))+K('sesje z AO',L.filter(x=>x.ao).length);
+  if(c==='D')h+=K(esc(L('ao_long')),LL.reduce((a,x)=>a+x.ao,0))+K('sesje z '+esc(L('ao')),LL.filter(x=>x.ao).length);
+  if(c==='E')h+=K(esc(L('sw_long')),LL.filter(x=>x.sw).length)+K('w planie',LL.filter(x=>x.plan===true).length);
   h+=K('od ostatniego',cur!=null?dur(cur):'—')+K('najdłuższa przerwa',n?dur(longest):'—')+K('średnia ocena',avgR?fnum(avgR):'—')+'</div>';
   // heatmap: 17 tygodni, kolumny = tygodnie (pn–nd)
   const cnt={};for(const x of all){const k=dayKey(x.t);cnt[k]=(cnt[k]||0)+1;}
@@ -602,12 +714,12 @@ function renderStats(){
   for(let i=0;i<17*7;i++){const dt=new Date(t0);dt.setDate(t0.getDate()+i);const k=dayKey(dt.getTime()),v=cnt[k]||0;
     h+=k>todayK?'<i></i>':`<i style="background:${v?col:'#36363A'};opacity:${v?[0,.45,.75,1][Math.min(3,v)]:1}"></i>`;}
   h+='</div>';
-  const dow=Array(7).fill(0),hr=Array(24).fill(0);for(const x of L){const d=new Date(x.t);dow[(d.getDay()+6)%7]++;hr[d.getHours()]++;}
+  const dow=Array(7).fill(0),hr=Array(24).fill(0);for(const x of LL){const d=new Date(x.t);dow[(d.getDay()+6)%7]++;hr[d.getHours()]++;}
   const bars=(arr,labels)=>{const mx=Math.max(1,...arr);return `<div class="bars">${arr.map(v=>`<div style="height:${v/mx*100}%;background:${col}"></div>`).join('')}</div><div class="bl">${labels.map(l=>`<span>${l}</span>`).join('')}</div>`;};
   h+='<div class="sec">Dzień tygodnia</div>'+bars(dow,['pn','wt','śr','cz','pt','sb','nd']);
   h+='<div class="sec">Godzina rozpoczęcia</div>'+bars(hr,hr.map((_,i)=>i%6===0?i:''));
   if(isS){
-    const g={};for(const x of L){const k=x.item||'';(g[k]=g[k]||{n:0,t:0,r:[]}).n++;g[k].t+=x.d;if(x.r)g[k].r.push(x.r);}
+    const g={};for(const x of LL){const k=x.item||'';(g[k]=g[k]||{n:0,t:0,r:[]}).n++;g[k].t+=x.d;if(x.r)g[k].r.push(x.r);}
     const rows=Object.entries(g).sort((a,b)=>b[1].n-a[1].n);
     if(rows.length){h+='<div class="sec">Przedmioty</div><div class="card"><table><tr><th>przedmiot</th><th class="r">×</th><th class="r">czas</th><th class="r">★</th></tr>';
       for(const [id,v] of rows)h+=`<tr><td>${esc(itemName(id)||'—')}</td><td class="r num">${v.n}</td><td class="r num">${dur(v.t)}</td><td class="r num">${v.r.length?fnum(v.r.reduce((a,b)=>a+b,0)/v.r.length):'—'}</td></tr>`;
@@ -644,6 +756,9 @@ function renderSet(){
    <div class="setrow"><label class="grow">komunikaty${yn('msgs',S.settings.msgs)}</label><label class="grow">tryb dyskretny${yn('discreet',S.settings.discreet)}</label></div>
    <div class="setrow"><label class="grow">grafiki z pakietu${yn('gfx',S.settings.gfx!==false)}</label><span class="grow info" style="margin:0">${S.msg&&S.msg.icons?Object.keys(S.msg.icons).length+' grafik':'brak grafik w pakiecie'}</span></div>
    <div class="info">Pakiet: ${S.msg?`własny (${cnt} tekstów)`:'domyślny, neutralny'}. Tryb dyskretny rozmywa teksty do momentu dotknięcia, wyłącza dymki z tekstami i ukrywa grafiki.</div></div>
+  <div class="sec">Plan ${alias('E')}</div><div class="card"><div class="setrow"><label class="grow">tryb<select data-set="pl_mode">${[['off','wyłączony'],['every','co N dni'],['dice','losowanie dzienne']].map(([v,l])=>`<option value="${v}"${S.plan.mode===v?' selected':''}>${l}</option>`).join('')}</select></label>
+   ${S.plan.mode==='every'?`<label class="grow">co ile dni<input type="number" inputmode="numeric" min="1" max="90" value="${S.plan.n}" data-set="pl_n"></label>`:''}${S.plan.mode==='dice'?`<label class="grow">szansa (%)<select data-set="pl_p">${[5,10,15,20,25,30,40,50].map(v=>`<option value="${v}"${S.plan.p===v?' selected':''}>${v}%</option>`).join('')}</select></label>`:''}</div>
+   <div class="info">${alias('E')} w planie: 50 XP i podwójna celebracja. Poza planem: 10 XP — nadal celebracja, ale mniej punktów. Losowanie: raz dziennie przyciskiem na ekranie Teraz.</div></div>
   <button class="setbtn" data-act="impMsg">Importuj pakiet komunikatów</button>${S.msg?'<button class="setbtn" data-act="defMsg">Przywróć domyślne komunikaty</button>':''}`;
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
@@ -674,13 +789,15 @@ function openEntry(k,id,opt={}){
       h+=`<p class="sub2 num" id="durl">${w.end?dur(w.end-w.start):'trwa'}</p>`;
       const its=S.items.filter(i=>i.cat===w.cat);
       h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
-      if(w.cat==='D')h+=`<span class="f">ORGAZMY ANALNE</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${(w.ao||0)===n?' on':''}" data-x="ao" data-v="${n}">${n}</button>`).join('')}</div>`;
+      if(w.cat==='D')h+=`<span class="f">${esc(L('ao_long')).toUpperCase()}</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${(w.ao||0)===n?' on':''}" data-x="ao" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(!isNew){const n=S.events.filter(e=>e.sessionId===w.id).length;h+=`<span class="f">ZDARZENIA ${alias('E')} W TRAKCIE</span><div class="chips"><span class="chip ro num">${n}</span><button class="chip" data-x="addev">+ dodaj</button></div>`;}
     }else{
       h+=`<h3>${sym('E','s')} ${isNew||opt.finish?'nowe zdarzenie':'zdarzenie'}</h3><label><span class="f">CZAS</span><input type="datetime-local" data-in="at" value="${toInput(w.at)}"></label>`;
       const ov=S.sessions.filter(s=>s.start<=w.at&&(s.end||Date.now())>=w.at);
       h+=`<span class="f">PODCZAS SESJI</span><div class="chips"><button class="chip${!w.sessionId?' on':''}" data-x="sess" data-v="">brak</button>${ov.map(s=>`<button class="chip${w.sessionId===s.id?' on':''}" data-x="sess" data-v="${s.id}">${alias(s.cat)} od ${hm(s.start)}</button>`).join('')}</div>`;
       const tags=[...new Set(S.events.map(e=>e.tag).filter(Boolean))];
+      h+=`<span class="f">${esc(L('sw_long')).toUpperCase()}</span><div class="chips"><button class="chip${!w.sw?' on':''}" data-x="sw" data-v="0">nie</button><button class="chip${w.sw?' on':''}" data-x="sw" data-v="1">tak (+${XPV.SW} XP)</button></div>`;
+      if(w.plan!=null)h+=`<span class="f">PLAN</span><div class="chips"><span class="chip ro">${w.plan?'✓ w planie':'poza planem'}</span></div>`;
       h+=`<span class="f">KONTEKST</span><input type="text" data-in="tag" list="tagl" maxlength="30" value="${esc(w.tag)}" placeholder="własny znacznik (opcjonalnie)"><datalist id="tagl">${tags.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
     }
     h+=`<span class="f">OCENA</span><div class="stars">${[1,2,3,4,5].map(n=>`<button class="${(w.rating||0)>=n?'on':''}" data-x="rate" data-v="${n}"></button>`).join('')}</div>`;
@@ -692,6 +809,7 @@ function openEntry(k,id,opt={}){
     if(x==='cat'){w.cat=v;w.itemId=null;redraw();}
     else if(x==='item'){w.itemId=w.itemId===v?null:v;redraw();}
     else if(x==='ao'){w.ao=+v;redraw();}
+    else if(x==='sw'){w.sw=v==='1';redraw();}
     else if(x==='rate'){w.rating=w.rating===+v?null:+v;redraw();}
     else if(x==='sess'){w.sessionId=v||null;redraw();}
     else if(x==='addev'){S.events.push({id:uid(),at:w.end||Date.now(),rating:null,sessionId:w.id,tag:'',note:''});save();redraw();toast('Dodano zdarzenie');}
@@ -760,16 +878,29 @@ const ACT={
     const K2=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
     openSheet(()=>`<div class="grab"></div><h3><span class="lvlc">${g.level}</span>${nm?esc(nm):'Poziom '+g.level}</h3><p class="sub2 num">${g.xp} XP łącznie · do poziomu ${g.level+1}: ${g.to-g.xp} XP</p>
       <div class="xpbar" style="margin:10px 0 14px"><i style="width:${(g.xp-g.from)/(g.to-g.from)*100}%"></i></div>
-      <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / 2')}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2('AO łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}</div>
+      <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / 2')}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2(esc(L('ao'))+' łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}${K2('noce z '+alias('P'),g.nights)}${K2('wyzwania dnia',g.chDone)}</div>
+      ${(()=>{const ws=weekStart(Date.now());let bw=0;for(let w=weekStart(S.created);w<ws;w=addDays(w,7))bw=Math.max(bw,xpBetween(g,w,addDays(w,7)));const tw=xpBetween(g,ws,addDays(ws,7)),mx=Math.max(bw,tw,1);
+        return `<div class="wkcmp"><b>Ten tydzień vs rekord</b><div class="row"><span>ten tydzień</span><span class="num">${tw} XP</span></div><div class="xpbar"><i style="width:${tw/mx*100}%"></i></div><div class="row"><span>rekordowy tydzień</span><span class="num">${bw} XP</span></div><div class="xpbar"><i style="width:${bw/mx*100}%;background:#5A5A60"></i></div>${tw>bw&&bw?'<div style="margin-top:8px;color:#FFB35C">🔥 Bijesz rekord!</div>':bw?`<div style="margin-top:8px;color:var(--tx2)">Do rekordu: ${bw-tw} XP</div>`:''}</div>`;})()}
+      <div class="row2" style="margin-top:10px"><button class="setbtn" style="margin:0;flex:1;margin-right:6px" data-x="rep">📊 Raport: poprzedni miesiąc</button><button class="setbtn" style="margin:0;flex:1" data-x="repn">Ten miesiąc</button></div>
       <span class="f">ODZNAKI ${un.size} / ${BADGES.length}</span><div class="badges">${BADGES.map(b=>`<div class="bdg${un.has(b[0])?' on':''}">${icon('b_'+b[0])?`<span class="bi">${icon('b_'+b[0])}</span>`:`<i>${b[1]}</i>`}<b>${esc(badgeName(b))}</b><small>${esc(b[3])}</small></div>`).join('')}</div>
       <span class="f">JAK DZIAŁA SERIA</span><div class="xpt">Dzień jest zaliczony, gdy był ${alias('P')} (dowolny) albo ${alias('D')}. Za każde 7 zaliczonych dni z rzędu dostajesz zamrożenie (maks. 2) — ratuje serię, jeśli opuścisz dzień. ${alias('E')} nie przerywa serii.</div>
-      <span class="f">PUNKTY XP</span><div class="xpt">${alias('P')}: 10 + 2/h (do 16) · duży: 40 + 5/30 min (do 20) · ${alias('D')}: 30 · AO: +50 · ${alias('R')}: 10 + do 10 · ${alias('E')}: 25 · idealny tydzień: 100 · seria 7/14/30/50/100…: dni×10 · dni bez ${alias('E')} (3…365): dni×5</div>
-      <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,()=>closeSheet());},
+      <span class="f">PUNKTY XP</span><div class="xpt">${alias('P')}: 10 + 2/h (do 16) · duży: 40 + 5/30 min (do 20) · ${alias('D')}: 30 · ${esc(L('ao'))}: +50 · ${alias('R')}: 10 + do 10 · ${alias('E')}: 25 (w planie 50, poza planem 10) · ${esc(L('sw'))}: +20 · noc z ${alias('P')} (2–5): +30 · cel sesji: 15 + 1/10 min · wyzwania dnia: 30–70 (weekend ×2) · idealny tydzień: 100 · seria 7/14/30/50/100…: dni×10 · dni bez ${alias('E')} (3…365): dni×5</div>
+      <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,x=>{if(x==='rep')ACT.report();else if(x==='repn')ACT.reportNow();else closeSheet();});},
   impMsg(){$('#impm').value='';$('#impm').click();},
   defMsg(){S.msg=null;headMsg.key='';save();render();toast('Przywrócono domyślne');},
   stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
-  event(){const prev=status().streak;const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:''};S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
-    if(gfxOn())confetti();showMsg(pick('ejac',{dni:prev}),{icon:'cel_ejac',sub:`Seria: ${prev} d`,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});},
+  event(){const prev=status().streak,ps=planState();const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:'',sw:false};
+    if(ps.mode!=='off')e.plan=!!ps.allowed;S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
+    const pool=e.plan===true?['ejac_plan','ejac']:e.plan===false?['ejac_off','ejac']:'ejac';
+    const sub=`Seria: ${prev} d`+(e.plan===true?' · ✓ w planie — podwójne XP':e.plan===false?' · poza planem':'');
+    if(gfxOn()||e.plan===true)confetti();showMsg(pick(pool,{dni:prev}),{icon:'cel_ejac',sub,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});},
+  draw(){const P=S.plan;const yes=Math.random()*100<P.p;S.draws=S.draws||{};S.draws[dayKey(Date.now())]=yes;headMsg.key='';save();render();if(yes)confetti();
+    showCard({big:yes?'🎲 TAK':'🎲 NIE',num:true,sub:yes?'Dziś wolno — podwójne XP za '+alias('E'):'Dziś nie. Cała energia gdzie indziej.',text:S.settings.msgs?pick(yes?'draw_yes':'draw_no',{}):''},()=>render());},
+  tgt(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;const opts=[0,15,30,45,60,90,120,180,240,360,480];
+    openSheet(()=>`<div class="grab"></div><h3>Cel czasu sesji</h3><p class="sub2">Za osiągnięcie celu: +15 XP + 1 XP za każde 10 min celu.</p><div class="chips" style="margin-top:12px">${opts.map(o=>`<button class="chip${(s.target||0)===o?' on':''}" data-x="t" data-v="${o}">${o?dur(o*60000):'brak'}</button>`).join('')}</div><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+    (x,v)=>{if(x==='t'){s.target=+v||null;tgtSeen.delete(s.id);save();}closeSheet();render();});},
+  report(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);closeSheet();reportSheet(d.getFullYear(),d.getMonth());},
+  reportNow(){const d=new Date();closeSheet();reportSheet(d.getFullYear(),d.getMonth());},
   edit(d){openEntry(d.k,d.id);},
   hm(d){hist.m+=+d.v;if(hist.m<0){hist.m=11;hist.y--;}if(hist.m>11){hist.m=0;hist.y++;}render();},
   hf(d){hist.filter=d.v||null;render();},
@@ -841,7 +972,8 @@ $('#impm').addEventListener('change',async ev=>{
     const levels=Array.isArray(pk.levels)?pk.levels.filter(x=>typeof x==='string').map(x=>x.slice(0,40)).slice(0,100):undefined;
     const badges={};if(pk.badges&&typeof pk.badges==='object')for(const [k,v] of Object.entries(pk.badges))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')badges[k]=v.slice(0,40);
     const icons={};let ni=0;if(pk.icons&&typeof pk.icons==='object')for(const [k,v] of Object.entries(pk.icons)){if(/^[a-z_0-9]{1,30}$/i.test(k)&&typeof v==='string'){const c=cleanSvg(v);if(c){icons[k]=c;ni++;}}}
-    S.msg={pools,levels,badges,icons:ni?icons:undefined};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
+    const labels={};if(pk.labels&&typeof pk.labels==='object')for(const [k,v] of Object.entries(pk.labels))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')labels[k]=v.slice(0,40);
+    S.msg={pools,levels,badges,icons:ni?icons:undefined,labels};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
   }catch(e){toast('To nie jest pakiet komunikatów');}
 });
 
@@ -862,6 +994,9 @@ $('#view').addEventListener('change',ev=>{
   else if(s==='msgs')S.settings.msgs=el.value==='1';
   else if(s==='discreet')S.settings.discreet=el.value==='1';
   else if(s==='gfx')S.settings.gfx=el.value==='1';
+  else if(s==='pl_mode')S.plan.mode=el.value;
+  else if(s==='pl_n')S.plan.n=Math.max(1,Math.min(90,parseInt(el.value,10)||7));
+  else if(s==='pl_p')S.plan.p=+el.value;
   headMsg.key='';
   save();render();
 });
