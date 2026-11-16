@@ -1,5 +1,5 @@
 // Przy każdej aktualizacji plików zmień numer wersji.
-const C = 'dz-v8';
+const C = 'dz-v10';
 const F = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
