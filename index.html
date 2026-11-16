@@ -128,8 +128,17 @@ td.r,th.r{text-align:right}
 .link{color:var(--tx2);font-size:14px;padding:6px 0}
 .link.danger{color:var(--warn)}
 .big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.today{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px}
+.msg{font-size:15px;line-height:1.45;margin-bottom:10px;white-space:pre-line;text-align:left;width:100%;display:block}
+.blur{filter:blur(7px);-webkit-user-select:none;user-select:none}
+.ck{display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--line)}
+.ck span:nth-child(2){flex:1}.ck em{font-style:normal;color:var(--tx2)}
+.ckm{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--tx3);display:flex;align-items:center;justify-content:center;font-size:12px;flex:0 0 auto}
+.ckm.ok{border-color:#7FAE8E;color:#7FAE8E}
+.big-msg{font-size:19px;line-height:1.45;font-weight:600;padding:10px 0 14px;white-space:pre-line;text-align:left;width:100%;display:block}
+.hintx{font-size:11px;color:var(--tx3);margin-bottom:8px}
 /* misc */
-#toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;max-width:90%;text-align:center;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
 #busy{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx2)}
 body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:100}
@@ -167,6 +176,7 @@ body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:
 <div id="toast"></div>
 <div id="busy" hidden>Szyfrowanie…</div>
 <input type="file" id="impf" accept=".json,application/json" hidden>
+<input type="file" id="impm" accept=".json,application/json" hidden>
 
 <script>
 'use strict';
@@ -213,14 +223,18 @@ async function seal(key,str){const iv=crypto.getRandomValues(new Uint8Array(12))
 async function unseal(key,box){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(box.iv)},key,unb64(box.ct));return JSON.parse(td.decode(pt));}
 const persist=()=>idb.set('vault',{salt:META.salt,iter:META.iter,fails:META.fails||0,wipe:META.wipe,iv:BOX&&BOX.iv,ct:BOX&&BOX.ct});
 function save(){if(!S||!KEY)return saving;const snap=JSON.stringify(S),key=KEY;saving=saving.then(async()=>{BOX=await seal(key,snap);await persist();}).catch(()=>toast('Błąd zapisu'));return saving;}
-function newState(){return{v:1,cats:JSON.parse(JSON.stringify(DEF)),items:[],sessions:[],events:[],settings:{autolock:60}};}
+function newState(){return{v:1,created:Date.now(),cats:JSON.parse(JSON.stringify(DEF)),items:[],sessions:[],events:[],settings:{autolock:60}};}
 function migrate(){
   S.cats=S.cats||{};
   for(const c of CATS){const k=S.cats[c]=Object.assign({},DEF[c],S.cats[c]||{});if(!/^#[0-9a-fA-F]{6}$/.test(k.color))k.color=DEF[c].color;k.alias=String(k.alias||c).slice(0,12);k.limit=(+k.limit>0)?Math.round(+k.limit):null;}
   S.items=(Array.isArray(S.items)?S.items:[]).filter(i=>i&&SESS.includes(i.cat));
   S.sessions=(Array.isArray(S.sessions)?S.sessions:[]).filter(s=>s&&SESS.includes(s.cat)&&s.start);
   S.events=(Array.isArray(S.events)?S.events:[]).filter(e=>e&&e.at);
-  S.settings=Object.assign({autolock:60},S.settings||{});
+  S.settings=Object.assign({autolock:60,discreet:true,msgs:true},S.settings||{});
+  S.goals=Object.assign({plugDaily:true,dPerWeek:1,bigPerWeek:1,rPerWeek:3},S.goals||{});
+  S.seen=Object.assign({week:'',ms:''},S.seen||{});
+  if(!S.created){const t=[...S.sessions.map(x=>x.start),...S.events.map(x=>x.at)];S.created=t.length?Math.min(...t):Date.now();}
+  if(S.msg&&!(S.msg.pools&&typeof S.msg.pools==='object'))S.msg=null;
 }
 
 /* ---------- lock ---------- */
@@ -231,7 +245,7 @@ function renderLock(msg){
 }
 function showLock(msg){S=null;KEY=null;clearInterval(tick);closeSheet();$('#app').hidden=true;$('#lock').hidden=false;pin='';renderLock(msg);}
 function lock(){if(!S)return;mode=META?'unlock':'setup1';showLock();}
-function enterApp(){$('#lock').hidden=true;$('#app').hidden=false;tab='now';render();clearInterval(tick);tick=setInterval(updateLive,1000);}
+function enterApp(){$('#lock').hidden=true;$('#app').hidden=false;tab='now';render();clearInterval(tick);tick=setInterval(updateLive,1000);checks();}
 async function submitPin(){
   if(pin.length<4){renderLock('Minimum 4 cyfry');return;}
   if(mode==='setup1'){firstPin=pin;mode='setup2';pin='';renderLock();return;}
@@ -240,7 +254,7 @@ async function submitPin(){
     busy(true,'Tworzenie klucza…');
     const salt=crypto.getRandomValues(new Uint8Array(16));
     META={salt:b64(salt),iter:ITER,fails:0,wipe:10};
-    KEY=await derive(pin,salt,ITER);S=newState();pin='';firstPin='';
+    KEY=await derive(pin,salt,ITER);S=newState();migrate();pin='';firstPin='';
     await save();busy(false);enterApp();return;
   }
   busy(true,'Odszyfrowywanie…');
@@ -273,6 +287,93 @@ function entryLine(en,tf){
   return `<button class="li" data-act="edit" data-k="${en.k}" data-id="${en.id}">${sym(en.cat,'s')}<span class="num">${m}</span><em class="num">${tf(en.t)}</em></button>`;
 }
 
+/* ---------- komunikaty i cele ---------- */
+const DEFMSG={pools:{
+  plug_due:['P: dziś jeszcze nie było.'],plug_done:['P: zapisane.'],
+  dildo_due:['D: cel tygodnia jeszcze przed Tobą ({zostalo}).'],dildo_overdue:['D: koniec tygodnia blisko, cel niezrobiony.'],dildo_done:['D: zapisane.'],
+  big_due:['Trening tygodniowy jeszcze niezrobiony.'],big_done:['Trening tygodniowy zaliczony.'],
+  ring_due:['R: zostało {zostalo} w tym tygodniu.'],ring_done:['R: zapisane.'],
+  ao:['Zapisano: {n}. W tym tygodniu: {tydz}.'],ejac:['Zapisano. Seria {dni} d zamknięta.'],streak:['{dni} dni.'],
+  start_R:[],start_P:[],start_D:[],
+  all_done:['Wszystko na dziś zrobione.'],
+  week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.']
+}};
+const MILESTONES=[3,5,7,10,14,21,30,45,60,90,120,180,270,365];
+const lastPick={};let headMsg={key:'',text:''};
+function poolOf(names){names=[].concat(names);
+  if(S.settings.msgs&&S.msg)for(const n of names){const p=S.msg.pools[n];if(Array.isArray(p)&&p.length)return [n,p];}
+  for(const n of names){const p=DEFMSG.pools[n];if(p&&p.length)return [n,p];}return [null,[]];}
+function pick(names,vars={}){const [n,p]=poolOf(names);if(!p.length)return '';let i=Math.floor(Math.random()*p.length);if(p.length>1&&i===lastPick[n])i=(i+1)%p.length;lastPick[n]=i;
+  return String(p[i]).replace(/\{(\w+)\}/g,(m,k)=>vars[k]!=null?vars[k]:m);}
+function dayStart(ts){const d=new Date(ts);d.setHours(0,0,0,0);return d.getTime();}
+function weekStart(ts){const d=new Date(dayStart(ts));d.setDate(d.getDate()-(d.getDay()+6)%7);return d.getTime();}
+function addDays(ts,n){const d=new Date(ts);d.setDate(d.getDate()+n);return d.getTime();}
+const isBig=s=>{const it=S.items.find(i=>i.id===s.itemId);return !!(it&&it.big);};
+function weekStats(ws,now=Date.now()){
+  const we=addDays(ws,7),inW=s=>s.start>=ws&&s.start<we;
+  const P=S.sessions.filter(s=>s.cat==='P'),D=S.sessions.filter(s=>s.cat==='D'&&inW(s));
+  let plugDays=0;for(let i=0;i<7;i++){const a=addDays(ws,i),b=addDays(ws,i+1);if(a>now)break;if(P.some(s=>!isBig(s)&&s.start<b&&(s.end||now)>=a))plugDays++;}
+  return{plugDays,d:D.length,big:P.filter(s=>isBig(s)&&inW(s)).length,r:S.sessions.filter(s=>s.cat==='R'&&inW(s)).length,
+    ao:D.reduce((a,s)=>a+(s.ao||0),0),e:S.events.filter(e=>e.at>=ws&&e.at<we).length};
+}
+function status(now=Date.now()){
+  const ds=dayStart(now),de=addDays(ds,1),w=weekStats(weekStart(now),now);
+  const plugToday=S.sessions.some(s=>s.cat==='P'&&!isBig(s)&&s.start<de&&(s.end||now)>=ds);
+  const lastE=S.events.reduce((m,e)=>Math.max(m,e.at),0);
+  const lastD=S.sessions.filter(s=>s.cat==='D').reduce((m,s)=>Math.max(m,s.start),0);
+  return{...w,plugToday,lastE,lastD,streak:Math.max(0,Math.floor((now-(lastE||S.created))/864e5)),dow:(new Date(now).getDay()+6)%7};
+}
+function dueList(st){const G=S.goals,o=[];
+  if(G.plugDaily&&!st.plugToday)o.push(['plug_due',{}]);
+  if(G.dPerWeek&&st.d<G.dPerWeek)o.push([(st.dow>=4||(st.lastD&&Date.now()-st.lastD>6*864e5))?['dildo_overdue','dildo_due']:'dildo_due',{zostalo:G.dPerWeek-st.d}]);
+  if(G.bigPerWeek&&st.big<G.bigPerWeek)o.push(['big_due',{zostalo:G.bigPerWeek-st.big}]);
+  if(G.rPerWeek&&st.r<G.rPerWeek&&st.dow>=2)o.push(['ring_due',{zostalo:G.rPerWeek-st.r}]);
+  return o;}
+function todayCard(){
+  const st=status(),G=S.goals,due=dueList(st),key=dayKey(Date.now())+'|'+due.map(d=>[].concat(d[0])[0]).join(',');
+  if(headMsg.key!==key)headMsg={key,text:due.length?pick(due[0][0],{...due[0][1],dni:st.streak}):pick('all_done',{dni:st.streak})};
+  const row=(ok,l,v)=>`<div class="ck"><span class="ckm${ok?' ok':''}">${ok?'✓':''}</span><span>${l}</span><em class="num">${v}</em></div>`;
+  const bigName=esc((S.items.find(i=>i.big)||{}).alias||'trening');
+  let h='<div class="today">';
+  if(S.settings.msgs&&headMsg.text)h+=`<button class="msg${S.settings.discreet?' blur':''}" data-act="reveal">${esc(headMsg.text)}</button>`;
+  if(G.plugDaily)h+=row(st.plugToday,`${alias('P')} dziś`,st.plugToday?'jest':'—');
+  if(G.dPerWeek)h+=row(st.d>=G.dPerWeek,`${alias('D')} w tym tygodniu`,`${st.d}/${G.dPerWeek}`);
+  if(G.bigPerWeek)h+=row(st.big>=G.bigPerWeek,`${bigName} w tym tygodniu`,`${st.big}/${G.bigPerWeek}`);
+  if(G.rPerWeek)h+=row(st.r>=G.rPerWeek,`${alias('R')} w tym tygodniu`,`${st.r}/${G.rPerWeek}`);
+  h+=`<div class="ck"><span class="ckm ok">◎</span><span>bez ${alias('E')}</span><em class="num">${st.streak} d</em></div>`;
+  if(st.ao)h+=`<div class="ck"><span class="ckm ok">★</span><span>AO w tym tygodniu</span><em class="num">${st.ao}</em></div>`;
+  return h+'</div>';
+}
+function showMsg(text,opt={}){
+  if(!text||!S.settings.msgs){if(opt.then)opt.then();else render();return;}
+  openSheet(()=>`<div class="grab"></div>${S.settings.discreet?'<div class="hintx">dotknij tekstu, aby odsłonić</div>':''}<button class="big-msg${S.settings.discreet?' blur':''}" data-x="rev">${esc(text)}</button>${opt.sub?`<p class="sub2">${opt.sub}</p>`:''}<button class="save" data-x="ok">${opt.btn||'OK'}</button>`,
+  (x,v,r,b)=>{if(x==='rev'){b.classList.toggle('blur');return;}closeSheet();if(opt.then)opt.then();else render();});
+}
+function quick(names,vars){if(S.settings.msgs&&!S.settings.discreet){const t=pick(names,vars);if(t)toast(t);}}
+function weekReport(ws){
+  const w=weekStats(ws),G=S.goals;const goals=[];
+  if(G.plugDaily)goals.push(w.plugDays>=6);if(G.dPerWeek)goals.push(w.d>=G.dPerWeek);if(G.bigPerWeek)goals.push(w.big>=G.bigPerWeek);if(G.rPerWeek)goals.push(w.r>=G.rPerWeek);
+  const met=goals.filter(Boolean).length,pool=!goals.length||met===goals.length?'week_good':met>=goals.length/2?'week_mixed':'week_weak';
+  const line=`${alias('P')}: ${w.plugDays}/7 dni · ${alias('D')}: ${w.d} · trening: ${w.big} · ${alias('R')}: ${w.r} · AO: ${w.ao} · ${alias('E')}: ${w.e}`;
+  return [pick(pool,{}),`Poprzedni tydzień — cele: ${met}/${goals.length}<br>${line}`];
+}
+function checks(){
+  const st=status(),q=[],wk=dayKey(weekStart(Date.now()));
+  if(S.seen.week&&S.seen.week!==wk)q.push(weekReport(weekStart(Date.now())-1));
+  S.seen.week=wk;
+  const ms=MILESTONES.filter(m=>st.streak>=m).pop()||0,mk=(st.lastE||S.created)+':'+ms;
+  if(ms&&S.seen.ms!==mk){q.push([pick(['streak_'+ms,'streak'],{dni:st.streak}),null]);S.seen.ms=mk;}
+  save();
+  const run=()=>{const t=q.shift();if(t)showMsg(t[0],{sub:t[1],then:run});else render();};run();
+}
+function afterFinish(s){
+  if(s.cat==='D'&&s.ao>0)return showMsg(pick('ao',{n:s.ao,tydz:status().ao}));
+  if(s.cat==='D')return showMsg(pick('dildo_done',{}));
+  if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}));
+  if(s.cat==='P'){quick('plug_done',{});return render();}
+  quick('ring_done',{});render();
+}
+
 function renderNow(){
   const act=S.sessions.filter(s=>!s.end).sort((a,b)=>a.start-b.start),d=new Date();
   let h=`<div class="hdr"><b>Teraz</b><span>${DN[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}</span></div>`;
@@ -282,6 +383,7 @@ function renderNow(){
     if(lim)h+=`<div class="bar"><i data-bar="${s.start}" data-lim="${lim}" style="background:${k.color}"></i></div><div class="meta"><span data-barlbl="${s.start}" data-lim="${lim}"></span><span class="num">próg ${dur(lim*60000)}</span></div>`;
     h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div></div>`;
   }
+  h+=todayCard();
   h+='<div class="grid">';
   for(const c of CATS){
     const a=act.find(s=>s.cat===c);
@@ -323,7 +425,7 @@ function renderHist(){
 
 function renderStats(){
   const c=stat.cat,isS=c!=='E',now=Date.now();
-  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:s.end-s.start,r:s.rating,item:s.itemId})):S.events.map(e=>({t:e.at,r:e.rating}))).sort((a,b)=>a.t-b.t);
+  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:s.end-s.start,r:s.rating,item:s.itemId,ao:s.ao||0})):S.events.map(e=>({t:e.at,r:e.rating}))).sort((a,b)=>a.t-b.t);
   const from=stat.range?now-stat.range*864e5:(all.length?all[0].t:now);
   const L=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=L.length;
   const rated=L.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
@@ -336,6 +438,7 @@ function renderStats(){
   h+='<div class="kpis">'+K('liczba',n)+K('na tydzień',fnum(n/(days/7)));
   if(isS){const ds=L.map(x=>x.d).sort((a,b)=>a-b),tot=ds.reduce((s,x)=>s+x,0),med=ds.length?(ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2):0;
     h+=K('łączny czas',n?dur(tot):'—')+K('mediana sesji',n?dur(med):'—')+K('najdłuższa sesja',n?dur(ds[ds.length-1]):'—')+K('średnio / tydzień',n?dur(tot/(days/7)):'—');}
+  if(c==='D')h+=K('orgazmy analne',L.reduce((a,x)=>a+x.ao,0))+K('sesje z AO',L.filter(x=>x.ao).length);
   h+=K('od ostatniego',cur!=null?dur(cur):'—')+K('najdłuższa przerwa',n?dur(longest):'—')+K('średnia ocena',avgR?fnum(avgR):'—')+'</div>';
   // heatmap: 17 tygodni, kolumny = tygodnie (pn–nd)
   const cnt={};for(const x of all){const k=dayKey(x.t);cnt[k]=(cnt[k]||0)+1;}
@@ -376,7 +479,18 @@ function renderSet(){
   h+=`<div class="info">Na ekranie pokazywane są 2 pierwsze znaki nazwy. Próg jest wyłącznie wizualny (pasek na ekranie Teraz); puste = brak.</div></div>`;
   h+=`<div class="sec">Bezpieczeństwo</div><div class="card"><div class="setrow"><label class="grow">automatyczna blokada po wyjściu<select data-set="autolock">${[[0,'od razu'],[60,'po 1 min'],[300,'po 5 min'],[900,'po 15 min']].map(([v,l])=>`<option value="${v}"${S.settings.autolock===v?' selected':''}>${l}</option>`).join('')}</select></label></div>
   <div class="setrow"><label class="grow">usuń dane po błędnych PIN-ach<select data-set="wipe">${[[0,'nigdy'],[5,'5 próbach'],[10,'10 próbach'],[20,'20 próbach']].map(([v,l])=>`<option value="${v}"${(META.wipe||0)===v?' selected':''}>${l}</option>`).join('')}</select></label></div></div>`;
-  h+=`<button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
+  const G=S.goals,yn=(k,v)=>`<select data-set="${k}"><option value="1"${v?' selected':''}>tak</option><option value="0"${!v?' selected':''}>nie</option></select>`;
+  const nIn=(k,v)=>`<input type="number" inputmode="numeric" min="0" max="14" value="${v||0}" data-set="${k}">`;
+  const cnt=S.msg?Object.values(S.msg.pools).reduce((a,p)=>a+(Array.isArray(p)?p.length:0),0):0;
+  h+=`<div class="sec">Cele</div><div class="card">
+   <div class="setrow"><label class="grow">${alias('P')} codziennie${yn('g_plug',G.plugDaily)}</label><label class="grow">${alias('D')} / tydzień${nIn('g_d',G.dPerWeek)}</label></div>
+   <div class="setrow"><label class="grow">trening (duży) / tydz.${nIn('g_big',G.bigPerWeek)}</label><label class="grow">${alias('R')} / tydzień${nIn('g_r',G.rPerWeek)}</label></div>
+   <div class="info">Przedmiot liczony jako trening tygodniowy oznaczasz w zakładce Przedmioty. 0 = cel wyłączony.</div></div>
+  <div class="sec">Komunikaty</div><div class="card">
+   <div class="setrow"><label class="grow">komunikaty${yn('msgs',S.settings.msgs)}</label><label class="grow">tryb dyskretny${yn('discreet',S.settings.discreet)}</label></div>
+   <div class="info">Pakiet: ${S.msg?`własny (${cnt} tekstów)`:'domyślny, neutralny'}. Tryb dyskretny rozmywa teksty do momentu dotknięcia i wyłącza dymki z tekstami.</div></div>
+  <button class="setbtn" data-act="impMsg">Importuj pakiet komunikatów</button>${S.msg?'<button class="setbtn" data-act="defMsg">Przywróć domyślne komunikaty</button>':''}`;
+  h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
   h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
@@ -405,6 +519,7 @@ function openEntry(k,id,opt={}){
       h+=`<p class="sub2 num" id="durl">${w.end?dur(w.end-w.start):'trwa'}</p>`;
       const its=S.items.filter(i=>i.cat===w.cat);
       h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
+      if(w.cat==='D')h+=`<span class="f">ORGAZMY ANALNE</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${(w.ao||0)===n?' on':''}" data-x="ao" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(!isNew){const n=S.events.filter(e=>e.sessionId===w.id).length;h+=`<span class="f">ZDARZENIA ${alias('E')} W TRAKCIE</span><div class="chips"><span class="chip ro num">${n}</span><button class="chip" data-x="addev">+ dodaj</button></div>`;}
     }else{
       h+=`<h3>${sym('E','s')} ${isNew||opt.finish?'nowe zdarzenie':'zdarzenie'}</h3><label><span class="f">CZAS</span><input type="datetime-local" data-in="at" value="${toInput(w.at)}"></label>`;
@@ -421,10 +536,11 @@ function openEntry(k,id,opt={}){
   openSheet(draw,(x,v,redraw)=>{
     if(x==='cat'){w.cat=v;w.itemId=null;redraw();}
     else if(x==='item'){w.itemId=w.itemId===v?null:v;redraw();}
+    else if(x==='ao'){w.ao=+v;redraw();}
     else if(x==='rate'){w.rating=w.rating===+v?null:+v;redraw();}
     else if(x==='sess'){w.sessionId=v||null;redraw();}
     else if(x==='addev'){S.events.push({id:uid(),at:w.end||Date.now(),rating:null,sessionId:w.id,tag:'',note:''});save();redraw();toast('Dodano zdarzenie');}
-    else if(x==='close'){closeSheet();render();}
+    else if(x==='close'){closeSheet();if(opt.finish&&k==='s')afterFinish(o);else render();}
     else if(x==='del'){
       if(!delArm){delArm=true;redraw();return;}
       const i=arr.findIndex(z=>z.id===w.id);if(i>=0)arr.splice(i,1);
@@ -440,7 +556,7 @@ function openEntry(k,id,opt={}){
       }else if(!w.at)return err('Podaj czas');
       if(k==='e'&&w.sessionId){const s=S.sessions.find(z=>z.id===w.sessionId);if(!s||s.start>w.at||(s.end&&s.end<w.at))w.sessionId=null;}
       if(isNew)arr.push(w);else Object.assign(o,w);
-      save();closeSheet();render();toast('Zapisano');
+      save();closeSheet();if(opt.finish&&k==='s')afterFinish(o);else{render();toast('Zapisano');}
     }
   },ev=>{
     const n=ev.target.dataset.in;if(!n)return;
@@ -457,12 +573,14 @@ function openItem(id){
     <span class="f">KATEGORIA</span><div class="chips">${SESS.map(c=>`<button class="chip${w.cat===c?' on':''}" data-x="cat" data-v="${c}">${alias(c)}</button>`).join('')}</div>
     <span class="f">NAZWA / KRYPTONIM</span><input type="text" data-in="alias" maxlength="30" value="${esc(w.alias)}">
     <span class="f">MATERIAŁ</span><div class="chips">${MAT.map(m=>`<button class="chip${w.material===m?' on':''}" data-x="mat" data-v="${m}">${m}</button>`).join('')}</div>
+    <span class="f">CEL TYGODNIOWY</span><div class="chips"><button class="chip${w.big?' on':''}" data-x="big">trening tygodniowy (duży)</button></div><p class="hint" style="margin-top:6px">Sesje z tym przedmiotem liczą się do treningu tygodniowego, nie do codziennego.</p>
     <span class="f">ROZMIAR</span><input type="text" data-in="size" maxlength="30" value="${esc(w.size)}" placeholder="np. 45 mm, M">
     <span class="f">NOTATKA (np. czyszczenie)</span><textarea data-in="note" rows="2" maxlength="1000">${esc(w.note)}</textarea>
     <div class="err" id="err"></div><button class="save" data-x="save">Zapisz</button>
     <div class="row2">${isNew?'<span></span>':`<button class="link danger" data-x="del">${delArm?'Na pewno usunąć?':'Usuń'}</button>`}<button class="link" data-x="close">Anuluj</button></div>`,
   (x,v,redraw)=>{
     if(x==='cat'){w.cat=v;redraw();}
+    else if(x==='big'){w.big=!w.big;redraw();}
     else if(x==='mat'){w.material=w.material===v?'':v;redraw();}
     else if(x==='close')closeSheet();
     else if(x==='del'){if(!delArm){delArm=true;redraw();return;}S.items=S.items.filter(i=>i.id!==w.id);S.sessions.forEach(s=>{if(s.itemId===w.id)s.itemId=null;});save();closeSheet();render();}
@@ -481,9 +599,13 @@ function pwSheet(title,hint,fields,onOk){
 const ACT={
   pin(d){if(busyOn)return;if(d.v==='del')pin=pin.slice(0,-1);else if(d.v==='ok'){submitPin();return;}else if(pin.length<8)pin+=d.v;renderLock();if(pin.length===8)submitPin();},
   tab(d){tab=d.tab;window.scrollTo(0,0);render();},
-  start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();},
+  start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();quick('start_'+d.cat,{});},
+  reveal(d,t){t.classList.toggle('blur');},
+  impMsg(){$('#impm').value='';$('#impm').click();},
+  defMsg(){S.msg=null;headMsg.key='';save();render();toast('Przywrócono domyślne');},
   stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
-  event(){const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:''};S.events.push(e);save();render();openEntry('e',e.id,{finish:true});},
+  event(){const prev=status().streak;const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:''};S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
+    showMsg(pick('ejac',{dni:prev}),{sub:`Seria: ${prev} d`,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});},
   edit(d){openEntry(d.k,d.id);},
   hm(d){hist.m+=+d.v;if(hist.m<0){hist.m=11;hist.y--;}if(hist.m>11){hist.m=0;hist.y++;}render();},
   hf(d){hist.filter=d.v||null;render();},
@@ -548,6 +670,14 @@ $('#impf').addEventListener('change',async ev=>{
   });
 });
 
+$('#impm').addEventListener('change',async ev=>{
+  const f=ev.target.files&&ev.target.files[0];if(!f||!S)return;
+  try{const pk=JSON.parse(await f.text());if(pk.f!=='dzmsg1'||!pk.pools||typeof pk.pools!=='object')throw 0;
+    const pools={};let n=0;for(const [k,v] of Object.entries(pk.pools)){if(/^[a-z_0-9]{1,30}$/.test(k)&&Array.isArray(v)){pools[k]=v.filter(x=>typeof x==='string').map(x=>x.slice(0,500)).slice(0,200);n+=pools[k].length;}}
+    S.msg={pools};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
+  }catch(e){toast('To nie jest pakiet komunikatów');}
+});
+
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   if(!S&&!t.closest('#lock'))return;
@@ -560,6 +690,11 @@ $('#view').addEventListener('change',ev=>{
   else if(s==='limit'){const v=parseInt(el.value,10);S.cats[c].limit=v>0?v:null;}
   else if(s==='autolock')S.settings.autolock=+el.value;
   else if(s==='wipe')META.wipe=+el.value;
+  else if(s==='g_plug')S.goals.plugDaily=el.value==='1';
+  else if(s==='g_d'||s==='g_big'||s==='g_r'){const v=Math.max(0,Math.min(14,parseInt(el.value,10)||0));S.goals[{g_d:'dPerWeek',g_big:'bigPerWeek',g_r:'rPerWeek'}[s]]=v;}
+  else if(s==='msgs')S.settings.msgs=el.value==='1';
+  else if(s==='discreet')S.settings.discreet=el.value==='1';
+  headMsg.key='';
   save();render();
 });
 document.addEventListener('visibilitychange',()=>{
