@@ -137,6 +137,46 @@ td.r,th.r{text-align:right}
 .ckm.ok{border-color:#7FAE8E;color:#7FAE8E}
 .big-msg{font-size:19px;line-height:1.45;font-weight:600;padding:10px 0 14px;white-space:pre-line;text-align:left;width:100%;display:block}
 .hintx{font-size:11px;color:var(--tx3);margin-bottom:8px}
+.hero{display:block;width:100%;text-align:left;background:linear-gradient(160deg,#352A20 0%,#2A2A2D 55%);border-radius:22px;padding:16px;margin-bottom:12px}
+.hero.cold{background:linear-gradient(160deg,#23262E 0%,#2A2A2D 55%)}
+.hrow{display:flex;align-items:center;gap:14px}
+.flame{position:relative;width:68px;height:68px;flex:0 0 auto}
+.flame svg{width:68px;height:68px}
+.flame .fo{fill:#4A4A50}.flame .fi{fill:#5A5A60}
+.flame.on .fo{fill:url(#gfo)}.flame.on .fi{fill:url(#gfi)}
+.flame.on svg{filter:drop-shadow(0 0 12px rgba(255,140,40,.55));animation:fl 1.8s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes fl{0%,100%{transform:scale(1) rotate(-1.5deg)}50%{transform:scale(1.07) rotate(1.5deg)}}
+.flame b{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:21px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.hs{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.hsub{font-size:12px;color:var(--tx2);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.hsub .ice{color:#7CC4F5}
+.week{display:flex;justify-content:space-between;margin:16px 0 14px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;color:var(--tx3)}
+.wd i{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:14px;font-weight:800;background:#36363A;color:#fff}
+.wd.done i{background:linear-gradient(160deg,#FFB35C,#FF7A2F);color:#3A1A04;box-shadow:0 0 10px rgba(255,130,40,.35)}
+.wd.frz i{background:linear-gradient(160deg,#9AD6FF,#4C9BE0)}
+.wd.miss i{opacity:.45}
+.wd.tod i{background:none;border:2px dashed #FF9F43;animation:pulse 1.6s ease-in-out infinite}
+.wd.tod span{color:var(--tx)}
+.wd.fut i{opacity:.3}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.lvl{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tx2);margin-bottom:6px;gap:8px}
+.lvl b{color:var(--tx);font-size:13px}
+.lvlc{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:7px;background:linear-gradient(160deg,#C3A6FF,#7A6BE0);color:#fff;font-weight:800;font-size:12px;margin-right:6px;padding:0 4px}
+.xpbar{height:10px;border-radius:5px;background:#36363A;overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#C3A6FF,#6C7BD9);border-radius:5px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.celeb{font-size:60px;line-height:1.1;text-align:center;margin:4px 0 2px;font-weight:800;animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.celeb.num{font-size:52px}
+@keyframes pop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+.csub{text-align:center;font-size:13px;color:var(--tx2);margin-bottom:6px}
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bdg{background:var(--card);border-radius:14px;padding:10px 6px;text-align:center;opacity:.35;filter:grayscale(1)}
+.bdg.on{opacity:1;filter:none;background:linear-gradient(160deg,#3A3340,#2A2A2D)}
+.bdg i{font-style:normal;font-size:28px;display:block}
+.bdg b{font-size:11px;display:block;margin-top:4px;line-height:1.25}
+.bdg small{font-size:10px;color:var(--tx3);display:block;margin-top:2px}
+.xpt{font-size:12px;color:var(--tx2);line-height:1.6}
+#cf{position:fixed;inset:0;pointer-events:none;z-index:60}
 /* misc */
 #toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;max-width:90%;text-align:center;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -173,6 +213,9 @@ body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:
 </div>
 
 <div id="sheet" hidden><div class="dim"></div><div class="sheet"></div></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="gfo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC15E"/><stop offset="1" stop-color="#FF5E2B"/></linearGradient>
+<linearGradient id="gfi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3B0"/><stop offset="1" stop-color="#FFB547"/></linearGradient></defs></svg>
 <div id="toast"></div>
 <div id="busy" hidden>Szyfrowanie…</div>
 <input type="file" id="impf" accept=".json,application/json" hidden>
@@ -296,7 +339,9 @@ const DEFMSG={pools:{
   ao:['Zapisano: {n}. W tym tygodniu: {tydz}.'],ejac:['Zapisano. Seria {dni} d zamknięta.'],streak:['{dni} dni.'],
   start_R:[],start_P:[],start_D:[],
   all_done:['Wszystko na dziś zrobione.'],
-  week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.']
+  week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.'],
+  streak_ext:['Seria: {seria} dni.'],streak_risk:['Seria {seria} dni czeka na dzisiejszy wpis.'],streak_freeze_used:['Zamrożenie uratowało serię.'],
+  level_up:['Poziom {poziom}.'],badge:['Nowa odznaka: {nazwa}.']
 }};
 const MILESTONES=[3,5,7,10,14,21,30,45,60,90,120,180,270,365];
 const lastPick={};let headMsg={key:'',text:''};
@@ -329,9 +374,11 @@ function dueList(st){const G=S.goals,o=[];
   if(G.bigPerWeek&&st.big<G.bigPerWeek)o.push(['big_due',{zostalo:G.bigPerWeek-st.big}]);
   if(G.rPerWeek&&st.r<G.rPerWeek&&st.dow>=2)o.push(['ring_due',{zostalo:G.rPerWeek-st.r}]);
   return o;}
-function todayCard(){
-  const st=status(),G=S.goals,due=dueList(st),key=dayKey(Date.now())+'|'+due.map(d=>[].concat(d[0])[0]).join(',');
-  if(headMsg.key!==key)headMsg={key,text:due.length?pick(due[0][0],{...due[0][1],dni:st.streak}):pick('all_done',{dni:st.streak})};
+function todayCard(g){
+  const st=status(),G=S.goals,due=dueList(st);
+  if(g&&!g.todayDone&&g.streak>0&&new Date().getHours()>=18)due.unshift(['streak_risk',{seria:g.streak}]);
+  const key=dayKey(Date.now())+'|'+due.map(d=>[].concat(d[0])[0]).join(',');
+  if(headMsg.key!==key)headMsg={key,text:due.length?pick(due[0][0],{...due[0][1],dni:st.streak,seria:g?g.streak:0}):pick('all_done',{dni:st.streak})};
   const row=(ok,l,v)=>`<div class="ck"><span class="ckm${ok?' ok':''}">${ok?'✓':''}</span><span>${l}</span><em class="num">${v}</em></div>`;
   const bigName=esc((S.items.find(i=>i.big)||{}).alias||'trening');
   let h='<div class="today">';
@@ -364,26 +411,116 @@ function checks(){
   const ms=MILESTONES.filter(m=>st.streak>=m).pop()||0,mk=(st.lastE||S.created)+':'+ms;
   if(ms&&S.seen.ms!==mk){q.push([pick(['streak_'+ms,'streak'],{dni:st.streak}),null]);S.seen.ms=mk;}
   save();
-  const run=()=>{const t=q.shift();if(t)showMsg(t[0],{sub:t[1],then:run});else render();};run();
+  const run=()=>{const t=q.shift();if(t)showMsg(t[0],{sub:t[1],then:run});else celebrate();};run();
 }
 function afterFinish(s){
-  if(s.cat==='D'&&s.ao>0)return showMsg(pick('ao',{n:s.ao,tydz:status().ao}));
-  if(s.cat==='D')return showMsg(pick('dildo_done',{}));
-  if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}));
-  if(s.cat==='P'){quick('plug_done',{});return render();}
-  quick('ring_done',{});render();
+  const then=()=>celebrate();
+  if(s.cat==='D'&&s.ao>0)return showMsg(pick('ao',{n:s.ao,tydz:status().ao}),{then});
+  if(s.cat==='D')return showMsg(pick('dildo_done',{}),{then});
+  if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}),{then});
+  if(s.cat==='P'){quick('plug_done',{});return celebrate();}
+  quick('ring_done',{});celebrate();
+}
+
+/* ---------- grywalizacja ---------- */
+const XPV={P:10,Pbig:40,D:30,AO:50,R:10,E:25,week:100};
+const STREAK_MS=[7,14,30,50,100,150,200,365];
+const FLAME='<svg viewBox="0 0 64 64"><path class="fo" d="M33 3c2 9-6 14-6 22 0 4 3 7 6.5 7 4.5 0 6.5-4 5.5-9.5C46 27 52 35 52 44a20 20 0 0 1-40 0c0-12 8.5-19 13-25C28 14 31 9 33 3z"/><path class="fi" d="M32 30c1 5-4 8-4 13 0 3 2 5 4.5 5S37 46 36.5 42c3 2 5.5 5.5 5.5 9a10 10 0 0 1-20 0c0-7 5-11 7-15 1.2-2 2.3-4 3-6z"/></svg>';
+const BADGES=[
+ ['ao_1','⭐','Pierwszy raz','1× AO',g=>g.ao>=1],['ao_10','🌟','Dziesiątka','10× AO',g=>g.ao>=10],['ao_50','💫','Pięćdziesiątka','50× AO',g=>g.ao>=50],['ao_100','🌠','Setka','100× AO',g=>g.ao>=100],
+ ['st_7','🔥','Tydzień w ogniu','seria 7 dni',g=>g.best>=7],['st_30','🔥','Miesiąc w ogniu','seria 30 dni',g=>g.best>=30],['st_100','🏆','Sto dni','seria 100 dni',g=>g.best>=100],['st_365','👑','Rok','seria 365 dni',g=>g.best>=365],
+ ['ne_7','🧊','Tydzień czysto','7 dni bez E',g=>g.bestNoE>=7],['ne_30','💠','Miesiąc czysto','30 dni bez E',g=>g.bestNoE>=30],['ne_90','🔷','Kwartał czysto','90 dni bez E',g=>g.bestNoE>=90],
+ ['big_10','💎','Rozciąganie ×10','10 treningów dużych',g=>g.big>=10],['big_50','💍','Rozciąganie ×50','50 treningów dużych',g=>g.big>=50],
+ ['d_25','🎯','25 treningów','25 sesji D',g=>g.d>=25],['d_100','🏹','100 treningów','100 sesji D',g=>g.d>=100],
+ ['p_100h','⏱️','100 godzin','100 h z P',g=>g.pHours>=100],['p_500h','⏳','500 godzin','500 h z P',g=>g.pHours>=500],
+ ['wk_1','✅','Idealny tydzień','wszystkie cele tygodnia',g=>g.perfectWeeks>=1],['wk_4','📅','4 idealne tygodnie','4× komplet',g=>g.perfectWeeks>=4],['wk_12','🗓️','12 idealnych tygodni','12× komplet',g=>g.perfectWeeks>=12],
+ ['e_10','🎉','Celebrant','10× E',g=>g.e>=10],['r_50','⭕','50× R','50 sesji R',g=>g.r>=50],['fr_1','❄️','Ratunek','pierwsze zamrożenie',g=>g.used>=1],
+ ['lv_10','🚀','Poziom 10','',g=>g.level>=10],['lv_20','🪐','Poziom 20','',g=>g.level>=20]
+];
+const lvlReq=L=>50*L*(L-1);
+function levelName(L){const a=S.msg&&S.msg.levels;return Array.isArray(a)&&a.length?a[Math.min(L,a.length)-1]:'';}
+function badgeName(b){return (S.msg&&S.msg.badges&&S.msg.badges[b[0]])||b[2];}
+function goalsMet(ws){const w=weekStats(ws),G=S.goals,gl=[];
+  if(G.plugDaily)gl.push(w.plugDays>=6);if(G.dPerWeek)gl.push(w.d>=G.dPerWeek);if(G.bigPerWeek)gl.push(w.big>=G.bigPerWeek);if(G.rPerWeek)gl.push(w.r>=G.rPerWeek);
+  return[gl.filter(Boolean).length,gl.length,w];}
+function computeGame(now=Date.now()){
+  const today=dayStart(now),tk=dayKey(today),done=new Set();
+  const act=S.sessions.filter(s=>s.cat==='P'||s.cat==='D');
+  for(const s of act){let d=dayStart(s.start);const end=Math.min(s.end||now,now);while(d<=end){done.add(dayKey(d));d=addDays(d,1);}}
+  let streak=0,best=0,freezes=0,used=0,run=0,bonus=0;const hist={};
+  if(act.length){let d=dayStart(Math.min(...act.map(s=>s.start)));
+    while(d<today){const k=dayKey(d);
+      if(done.has(k)){streak++;run++;hist[k]='done';if(run%7===0&&freezes<2)freezes++;if(STREAK_MS.includes(streak))bonus+=streak*10;}
+      else if(freezes>0&&streak>0){freezes--;used++;hist[k]='frozen';}
+      else{streak=0;run=0;hist[k]='miss';}
+      best=Math.max(best,streak);d=addDays(d,1);}}
+  const todayDone=done.has(tk);if(todayDone){streak++;hist[tk]='done';if(STREAK_MS.includes(streak))bonus+=streak*10;}best=Math.max(best,streak);
+  let xp=bonus,ao=0,big=0,dn=0,pH=0,r=0;
+  for(const s of S.sessions){const h=s.end?(s.end-s.start)/36e5:0;
+    if(s.cat==='P'){if(isBig(s)){big++;xp+=XPV.Pbig+Math.min(20,Math.floor(h*2)*5);}else xp+=XPV.P+Math.min(16,Math.floor(h)*2);pH+=h;}
+    else if(s.cat==='D'){dn++;ao+=s.ao||0;xp+=XPV.D+(s.ao||0)*XPV.AO;}
+    else if(s.cat==='R'){r++;xp+=XPV.R+Math.min(10,Math.floor(h*4));}}
+  const E=S.events.map(e=>e.at).sort((a,b)=>a-b);xp+=E.length*XPV.E;
+  let prev=S.created,bestNoE=0;const gaps=[];for(const t of E){gaps.push((t-prev)/864e5);prev=t;}gaps.push((now-prev)/864e5);
+  for(const gp of gaps){bestNoE=Math.max(bestNoE,gp);for(const m of MILESTONES)if(gp>=m)xp+=m*5;}
+  let pw=0;for(let w=weekStart(S.created);w<weekStart(now);w=addDays(w,7)){const [m,t]=goalsMet(w);if(t&&m===t)pw++;}xp+=pw*XPV.week;
+  xp=Math.round(xp);let L=1;while(lvlReq(L+1)<=xp)L++;
+  return{xp,level:L,from:lvlReq(L),to:lvlReq(L+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw};
+}
+function heroCard(g){
+  const ws=weekStart(Date.now()),tk=dayKey(Date.now()),DD=['pn','wt','śr','cz','pt','sb','nd'];let dots='';
+  for(let i=0;i<7;i++){const d=addDays(ws,i),k=dayKey(d),st=g.hist[k];
+    const c=st==='done'?'done':st==='frozen'?'frz':st==='miss'?'miss':k===tk?'tod':d>Date.now()?'fut':'';
+    dots+=`<div class="wd ${c}"><i>${st==='done'?'✓':st==='frozen'?'❄':''}</i><span>${DD[i]}</span></div>`;}
+  const pct=Math.min(100,(g.xp-g.from)/(g.to-g.from)*100),nm=levelName(g.level);
+  const dz=g.streak===1?'dzień':'dni';
+  return `<button class="hero${g.todayDone?'':' cold'}" data-act="profile"><div class="hrow"><div class="flame${g.todayDone?' on':''}">${FLAME}<b class="num">${g.streak}</b></div>
+    <div><div class="hs">${g.streak} ${dz} serii</div><div class="hsub"><span>${g.todayDone?'🔥 dziś zaliczone':'dziś jeszcze nie'}</span><span class="ice">❄ ${g.freezes}/2</span><span>rekord ${g.best}</span></div></div></div>
+    <div class="week">${dots}</div>
+    <div class="lvl"><span><span class="lvlc">${g.level}</span><b>${nm?esc(nm):'Poziom '+g.level}</b></span><span class="num">${g.xp-g.from} / ${g.to-g.from} XP</span></div>
+    <div class="xpbar"><i style="width:${pct}%"></i></div></button>`;
+}
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const old=$('#cf');if(old)old.remove();
+  const c=document.createElement('canvas');c.id='cf';document.body.appendChild(c);
+  const x=c.getContext('2d'),dpr=window.devicePixelRatio||1,W=innerWidth,H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.scale(dpr,dpr);
+  const cols=[...CATS.map(k=>S.cats[k].color),'#FF9F43','#C3A6FF','#FFE07A'];
+  const P=Array.from({length:150},()=>({x:W/2+(Math.random()-.5)*60,y:H*.42,vx:(Math.random()-.5)*14,vy:-Math.random()*15-5,r:Math.random()*7+4,c:cols[Math.random()*cols.length|0],a:Math.random()*6,va:(Math.random()-.5)*.35}));
+  const t0=performance.now();
+  (function f(t){const el=t-t0;x.clearRect(0,0,W,H);
+    for(const p of P){p.vy+=.38;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.globalAlpha=Math.max(0,1-el/2400);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore();}
+    if(el<2400)requestAnimationFrame(f);else c.remove();})(t0);
+}
+function showCard(t,then){
+  openSheet(()=>`<div class="grab"></div><div class="celeb${t.num?' num':''}">${t.big}</div>${t.sub?`<div class="csub">${t.sub}</div>`:''}
+    ${t.text?`${S.settings.discreet?'<div class="hintx" style="text-align:center">dotknij tekstu, aby odsłonić</div>':''}<button class="big-msg${S.settings.discreet?' blur':''}" style="text-align:center" data-x="rev">${esc(t.text)}</button>`:''}
+    <button class="save" data-x="ok">${t.btn||'Dalej'}</button>`,
+  (x,v,r,b)=>{if(x==='rev'){b.classList.toggle('blur');return;}closeSheet();then();});
+}
+function celebrate(then){
+  const g=computeGame(),sn=S.seen,q=[],tk=dayKey(Date.now()),msgOn=S.settings.msgs;
+  if(sn.used==null)sn.used=g.used;else if(g.used>sn.used){q.push({big:'❄️',sub:'Zamrożenie użyte — seria ocalała',text:msgOn?pick('streak_freeze_used',{seria:g.streak}):''});sn.used=g.used;}
+  if(g.todayDone&&sn.streakDay!==tk){sn.streakDay=tk;q.push({conf:g.streak>1,big:'🔥 '+g.streak,num:true,sub:g.streak===1?'seria rozpoczęta':`${g.streak} dni z rzędu`,text:msgOn?pick('streak_ext',{seria:g.streak}):''});}
+  if(sn.level==null)sn.level=g.level;else if(g.level>sn.level){sn.level=g.level;const nm=levelName(g.level);q.push({conf:true,big:'⬆️ '+g.level,num:true,sub:nm?esc(nm):'nowy poziom',text:msgOn?pick('level_up',{poziom:g.level,nazwa:nm||g.level}):''});}
+  const un=BADGES.filter(b=>b[4](g)).map(b=>b[0]);
+  if(!Array.isArray(sn.badges))sn.badges=un;else for(const id of un)if(!sn.badges.includes(id)){sn.badges.push(id);const b=BADGES.find(z=>z[0]===id);q.push({conf:true,big:b[1],sub:'Nowa odznaka: <b>'+esc(badgeName(b))+'</b>',text:msgOn?pick('badge',{nazwa:badgeName(b)}):''});}
+  if(sn.xp!=null&&g.xp>sn.xp)toast(`+${g.xp-sn.xp} XP`);sn.xp=g.xp;
+  save();
+  const run=()=>{const t=q.shift();if(!t){if(then)then();else render();return;}if(t.conf)confetti();showCard(t,run);};run();
 }
 
 function renderNow(){
   const act=S.sessions.filter(s=>!s.end).sort((a,b)=>a.start-b.start),d=new Date();
   let h=`<div class="hdr"><b>Teraz</b><span>${DN[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}</span></div>`;
+  const g=computeGame();h+=heroCard(g);
   for(const s of act){
     const k=S.cats[s.cat],lim=k.limit,it=itemName(s.itemId);
     h+=`<div class="active"><div class="top">${sym(s.cat)}<span class="t num" data-start="${s.start}">${hms(Date.now()-s.start)}</span><button class="stop" data-act="stop" data-id="${s.id}">Stop</button></div>`;
     if(lim)h+=`<div class="bar"><i data-bar="${s.start}" data-lim="${lim}" style="background:${k.color}"></i></div><div class="meta"><span data-barlbl="${s.start}" data-lim="${lim}"></span><span class="num">próg ${dur(lim*60000)}</span></div>`;
     h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div></div>`;
   }
-  h+=todayCard();
+  h+=todayCard(g);
   h+='<div class="grid">';
   for(const c of CATS){
     const a=act.find(s=>s.cat===c);
@@ -540,7 +677,7 @@ function openEntry(k,id,opt={}){
     else if(x==='rate'){w.rating=w.rating===+v?null:+v;redraw();}
     else if(x==='sess'){w.sessionId=v||null;redraw();}
     else if(x==='addev'){S.events.push({id:uid(),at:w.end||Date.now(),rating:null,sessionId:w.id,tag:'',note:''});save();redraw();toast('Dodano zdarzenie');}
-    else if(x==='close'){closeSheet();if(opt.finish&&k==='s')afterFinish(o);else render();}
+    else if(x==='close'){closeSheet();if(opt.finish&&k==='s')afterFinish(o);else if(opt.finish)celebrate();else render();}
     else if(x==='del'){
       if(!delArm){delArm=true;redraw();return;}
       const i=arr.findIndex(z=>z.id===w.id);if(i>=0)arr.splice(i,1);
@@ -556,7 +693,7 @@ function openEntry(k,id,opt={}){
       }else if(!w.at)return err('Podaj czas');
       if(k==='e'&&w.sessionId){const s=S.sessions.find(z=>z.id===w.sessionId);if(!s||s.start>w.at||(s.end&&s.end<w.at))w.sessionId=null;}
       if(isNew)arr.push(w);else Object.assign(o,w);
-      save();closeSheet();if(opt.finish&&k==='s')afterFinish(o);else{render();toast('Zapisano');}
+      save();closeSheet();if(opt.finish&&k==='s')afterFinish(o);else if(opt.finish)celebrate();else{render();toast('Zapisano');}
     }
   },ev=>{
     const n=ev.target.dataset.in;if(!n)return;
@@ -599,8 +736,17 @@ function pwSheet(title,hint,fields,onOk){
 const ACT={
   pin(d){if(busyOn)return;if(d.v==='del')pin=pin.slice(0,-1);else if(d.v==='ok'){submitPin();return;}else if(pin.length<8)pin+=d.v;renderLock();if(pin.length===8)submitPin();},
   tab(d){tab=d.tab;window.scrollTo(0,0);render();},
-  start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();quick('start_'+d.cat,{});},
+  start(d){S.sessions.push({id:uid(),cat:d.cat,start:Date.now(),end:null,itemId:null,rating:null,note:''});save();render();quick('start_'+d.cat,{});celebrate();},
   reveal(d,t){t.classList.toggle('blur');},
+  profile(){const g=computeGame(),un=new Set(BADGES.filter(b=>b[4](g)).map(b=>b[0])),nm=levelName(g.level);
+    const K2=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
+    openSheet(()=>`<div class="grab"></div><h3><span class="lvlc">${g.level}</span>${nm?esc(nm):'Poziom '+g.level}</h3><p class="sub2 num">${g.xp} XP łącznie · do poziomu ${g.level+1}: ${g.to-g.xp} XP</p>
+      <div class="xpbar" style="margin:10px 0 14px"><i style="width:${(g.xp-g.from)/(g.to-g.from)*100}%"></i></div>
+      <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / 2')}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2('AO łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}</div>
+      <span class="f">ODZNAKI ${un.size} / ${BADGES.length}</span><div class="badges">${BADGES.map(b=>`<div class="bdg${un.has(b[0])?' on':''}"><i>${b[1]}</i><b>${esc(badgeName(b))}</b><small>${esc(b[3])}</small></div>`).join('')}</div>
+      <span class="f">JAK DZIAŁA SERIA</span><div class="xpt">Dzień jest zaliczony, gdy był ${alias('P')} (dowolny) albo ${alias('D')}. Za każde 7 zaliczonych dni z rzędu dostajesz zamrożenie (maks. 2) — ratuje serię, jeśli opuścisz dzień. ${alias('E')} nie przerywa serii.</div>
+      <span class="f">PUNKTY XP</span><div class="xpt">${alias('P')}: 10 + 2/h (do 16) · duży: 40 + 5/30 min (do 20) · ${alias('D')}: 30 · AO: +50 · ${alias('R')}: 10 + do 10 · ${alias('E')}: 25 · idealny tydzień: 100 · seria 7/14/30/50/100…: dni×10 · dni bez ${alias('E')} (3…365): dni×5</div>
+      <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,()=>closeSheet());},
   impMsg(){$('#impm').value='';$('#impm').click();},
   defMsg(){S.msg=null;headMsg.key='';save();render();toast('Przywrócono domyślne');},
   stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
@@ -674,7 +820,9 @@ $('#impm').addEventListener('change',async ev=>{
   const f=ev.target.files&&ev.target.files[0];if(!f||!S)return;
   try{const pk=JSON.parse(await f.text());if(pk.f!=='dzmsg1'||!pk.pools||typeof pk.pools!=='object')throw 0;
     const pools={};let n=0;for(const [k,v] of Object.entries(pk.pools)){if(/^[a-z_0-9]{1,30}$/.test(k)&&Array.isArray(v)){pools[k]=v.filter(x=>typeof x==='string').map(x=>x.slice(0,500)).slice(0,200);n+=pools[k].length;}}
-    S.msg={pools};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
+    const levels=Array.isArray(pk.levels)?pk.levels.filter(x=>typeof x==='string').map(x=>x.slice(0,40)).slice(0,100):undefined;
+    const badges={};if(pk.badges&&typeof pk.badges==='object')for(const [k,v] of Object.entries(pk.badges))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')badges[k]=v.slice(0,40);
+    S.msg={pools,levels,badges};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
   }catch(e){toast('To nie jest pakiet komunikatów');}
 });
 
