@@ -315,9 +315,9 @@ body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:
 
 <script>
 'use strict';
-const CATS=['R','P','D','F','K','E'], SESS=['R','P','D','F','K'], ITEMCATS=['R','P','D','K'];
+const CATS=['R','P','D','F','M','K','E'], SESS=['R','P','D','F','M','K'], ITEMCATS=['R','P','D','K'];
 const catOn=c=>c!=='K'||!!(S&&S.cats.K&&S.cats.K.on);
-const DEF={R:{alias:'R',color:'#E0A458',limit:null},P:{alias:'P',color:'#6C7BD9',limit:null},D:{alias:'D',color:'#7FAE8E',limit:null},F:{alias:'F',color:'#E07A5F',limit:null},K:{alias:'K',color:'#9AA3B5',limit:null,on:false},E:{alias:'E',color:'#C47A8A',limit:null}};
+const DEF={R:{alias:'R',color:'#E0A458',limit:null},P:{alias:'P',color:'#6C7BD9',limit:null},D:{alias:'D',color:'#7FAE8E',limit:null},F:{alias:'F',color:'#E07A5F',limit:null},M:{alias:'M',color:'#C98BB9',limit:null},K:{alias:'K',color:'#9AA3B5',limit:null,on:false},E:{alias:'E',color:'#C47A8A',limit:null}};
 const ITER=600000;
 const te=new TextEncoder(), td=new TextDecoder();
 let S=null, KEY=null, META=null, BOX=null, tab='now', hiddenAt=0, tick=null, saving=Promise.resolve();
@@ -350,16 +350,17 @@ function cleanSvg(str){try{
   const walk=el=>{for(const ch of [...el.children]){if(!SVG_TAGS.has(ch.nodeName.toLowerCase())){ch.remove();continue;}walk(ch);}
     for(const a of [...el.attributes]){const n=a.name.toLowerCase(),v=a.value;if(!SVG_ATTR.test(n)||/javascript:|data:|url\(\s*['"]?(?!#)/i.test(v))el.removeAttribute(a.name);}};
   walk(root);return new XMLSerializer().serializeToString(root);}catch(e){return null;}}
-const LBL={ev_jan:'Styczeń z P',ev_feb:'Luty z D',ev_mar:'Marzec rozciągania',ev_apr:'Kwiecień nocy',ev_may:'Majówka',ev_jun:'Czerwiec bez rąk',ev_jul:'Lipiec krawędzi',ev_aug:'Sierpień ręki',ev_sep:'Wrzesień szczebla',ev_oct:'Locktober',edge:'Edge',fs1:'Etap 1',fs2:'Etap 2',fs3:'Etap 3',fs4:'Etap 4',fs5:'Etap 5',fs6:'Etap 6',nnn:'Listopad bez E',ao:'AO',ao_long:'Wynik ★',sw:'S',sw_long:'Opcja S',night:'Noc'};
+const LBL={m_hand:'ręka',m_toy:'zabawka',m_hf:'bez rąk',m_cage:'przez K',k_full:'pełny',k_ruined:'zrujnowany',k_milk:'dojenie',d_sw:'opcja S',d_toy:'na przedmiot',d_plug:'zatkane',d_body:'na ciało',d_other:'inne',sw_hand:'z ręki',sw_lick:'zlizane',sw_later:'później',ev_jan:'Styczeń z P',ev_feb:'Luty z D',ev_mar:'Marzec rozciągania',ev_apr:'Kwiecień nocy',ev_may:'Maj kontroli',ev_jun:'Czerwiec bez rąk',ev_jul:'Lipiec krawędzi',ev_aug:'Sierpień ręki',ev_sep:'Wrzesień szczebla',ev_oct:'Locktober',edge:'Edge',fs1:'Etap 1',fs2:'Etap 2',fs3:'Etap 3',fs4:'Etap 4',fs5:'Etap 5',fs6:'Etap 6',nnn:'Listopad bez E',ao:'AO',ao_long:'Wynik ★',sw:'S',sw_long:'Opcja S',night:'Noc'};
 const L=k=>(S&&S.msg&&S.msg.labels&&S.msg.labels[k])||LBL[k]||k;
 const gfxOn=()=>!!(S&&S.settings.gfx!==false&&!S.settings.discreet&&S.msg&&S.msg.icons);
 const icon=n=>gfxOn()&&S.msg.icons[n]?S.msg.icons[n]:'';
 function levelMedal(L){const h=(r,cy)=>Array.from({length:6},(_,i)=>{const a=(i*60-90)*Math.PI/180;return (50+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);}).join(' ');
   return `<svg viewBox="0 0 100 100"><defs><linearGradient id="lma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3D6FF"/><stop offset="1" stop-color="#3E3290"/></linearGradient><linearGradient id="lmb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C3A6FF"/><stop offset="1" stop-color="#5A4BC0"/></linearGradient></defs><polygon points="${h(44,51)}" fill="url(#lma)" stroke="url(#lma)" stroke-width="8" stroke-linejoin="round"/><polygon points="${h(36,51)}" fill="url(#lmb)" stroke="url(#lmb)" stroke-width="6" stroke-linejoin="round"/><ellipse cx="42" cy="26" rx="20" ry="8" fill="#fff" opacity=".18"/><text x="50" y="${L>99?62:65}" text-anchor="middle" font-size="${L>99?28:38}" font-weight="800" fill="#fff" font-family="-apple-system,system-ui,sans-serif">${L}</text></svg>`;}
-const EMOS={K:['🔒','⛓️','🗝️','🐓','🧊'],R:['⭕','💍','🔒','⛓️','🎀'],P:['🔌','🍑','💎','🎈','🌰'],D:['🍆','🚀','🦄','🌶️','🍌'],F:['✊','🤜','🖐️','💪','🥊'],E:['💦','🎉','🌋','🥛','🍾']};
+const EMOS={M:['✋','🔥','🎯','🌀','⏳'],K:['🔒','⛓️','🗝️','🐓','🧊'],R:['⭕','💍','🔒','⛓️','🎀'],P:['🔌','🍑','💎','🎈','🌰'],D:['🍆','🚀','🦄','🌶️','🍌'],F:['✊','🤜','🖐️','💪','🥊'],E:['💦','🎉','🌋','🥛','🍾']};
 function oneEmoji(v){v=String(v||'').trim();if(!v)return '';try{if(Intl.Segmenter){const it=new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)[Symbol.iterator]().next();return it.value?it.value.segment:'';}}catch(e){}return Array.from(v).slice(0,2).join('');}
 function sym(c,cls=''){const k=S.cats[c],ic=icon('cat_'+c);if(k.emoji)return `<span class="sym em ${cls}" style="background:${k.color}">${esc(k.emoji)}</span>`;if(ic)return `<span class="sym gi ${cls}" style="background:${k.color}">${ic}</span>`;return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
 const alias=c=>esc(S.cats[c].alias||c);
+const realE=()=>S.events.filter(e=>e.kind!=='milk');
 const itemName=id=>(S.items.find(i=>i.id===id)||{}).alias||'';
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 function busy(on,txt){busyOn=on;$('#busy').hidden=!on;if(txt)$('#busy').textContent=txt;}
@@ -407,7 +408,7 @@ function migrate(){
   for(const c of CATS){const k=S.cats[c]=Object.assign({},DEF[c],S.cats[c]||{});if(!/^#[0-9a-fA-F]{6}$/.test(k.color))k.color=DEF[c].color;k.alias=String(k.alias||c).slice(0,12);k.emoji=typeof k.emoji==='string'?k.emoji.slice(0,16):'';k.limit=(+k.limit>0)?Math.round(+k.limit):null;}
   S.items=(Array.isArray(S.items)?S.items:[]).filter(i=>i&&ITEMCATS.includes(i.cat));
   S.sessions=(Array.isArray(S.sessions)?S.sessions:[]).filter(s=>s&&SESS.includes(s.cat)&&s.start);
-  S.events=(Array.isArray(S.events)?S.events:[]).filter(e=>e&&e.at);
+  S.events=(Array.isArray(S.events)?S.events:[]).filter(e=>e&&e.at);S.events.forEach(e=>{if(e.sw&&!e.dest)e.dest='sw';});
   S.settings=Object.assign({autolock:60,discreet:true,msgs:true},S.settings||{});
   S.goals=Object.assign({plugDaily:true,dPerWeek:1,bigPerWeek:1,rPerWeek:3},S.goals||{});
   S.seen=Object.assign({week:'',ms:''},S.seen||{});
@@ -488,7 +489,7 @@ const DEFMSG={pools:{
   start_R:[],start_P:[],start_D:[],
   all_done:['Wszystko na dziś zrobione.'],
   week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.'],
-  challenge:['Wyzwanie zaliczone.'],record:['Nowy rekord.'],unlock:['Zakup odblokowany: {nazwa}.'],skill_3:['Rozmiar swobodny.'],skill_4:['Rozmiar za mały.'],event_done:['Event zaliczony.'],fist_up:['Awans: {etap}.'],ladder_up:['Nowy rozmiar opanowany.'],advent:['Okienko otwarte.'],month_done:['Wyzwanie miesiąca zaliczone.'],trophy:['Trofeum miesiąca zdobyte.'],night:['Noc zapisana. Razem: {n}.'],draw_yes:['Wylosowano: dziś wolno.'],draw_no:['Wylosowano: dziś nie.'],ejac_plan:['Zgodnie z planem.'],ejac_off:['Poza planem — zapisane.'],
+  challenge:['Wyzwanie zaliczone.'],ejac_ruined:['Zapisano.'],ctrl_done:['Kontrola zaliczona.'],record:['Nowy rekord.'],unlock:['Zakup odblokowany: {nazwa}.'],skill_3:['Rozmiar swobodny.'],skill_4:['Rozmiar za mały.'],event_done:['Event zaliczony.'],fist_up:['Awans: {etap}.'],ladder_up:['Nowy rozmiar opanowany.'],advent:['Okienko otwarte.'],month_done:['Wyzwanie miesiąca zaliczone.'],trophy:['Trofeum miesiąca zdobyte.'],night:['Noc zapisana. Razem: {n}.'],draw_yes:['Wylosowano: dziś wolno.'],draw_no:['Wylosowano: dziś nie.'],ejac_plan:['Zgodnie z planem.'],ejac_off:['Poza planem — zapisane.'],
   streak_ext:['Seria: {seria} dni.'],streak_risk:['Seria {seria} dni czeka na dzisiejszy wpis.'],streak_freeze_used:['Zamrożenie uratowało serię.'],
   level_up:['Poziom {poziom}.'],badge:['Nowa odznaka: {nazwa}.']
 }};
@@ -508,12 +509,12 @@ function weekStats(ws,now=Date.now()){
   const P=S.sessions.filter(s=>s.cat==='P'),D=S.sessions.filter(s=>s.cat==='D'&&inW(s));
   let plugDays=0;for(let i=0;i<7;i++){const a=addDays(ws,i),b=addDays(ws,i+1);if(a>now)break;if(P.some(s=>!isBig(s)&&s.start<b&&(s.end||now)>=a))plugDays++;}
   return{plugDays,d:D.length,big:P.filter(s=>isBig(s)&&inW(s)).length,r:S.sessions.filter(s=>s.cat==='R'&&inW(s)).length,
-    ao:D.reduce((a,s)=>a+(s.ao||0),0),e:S.events.filter(e=>e.at>=ws&&e.at<we).length};
+    ao:D.reduce((a,s)=>a+(s.ao||0),0),e:realE().filter(e=>e.at>=ws&&e.at<we).length};
 }
 function status(now=Date.now()){
   const ds=dayStart(now),de=addDays(ds,1),w=weekStats(weekStart(now),now);
   const plugToday=S.sessions.some(s=>s.cat==='P'&&!isBig(s)&&s.start<de&&(s.end||now)>=ds);
-  const lastE=S.events.reduce((m,e)=>Math.max(m,e.at),0);
+  const lastE=realE().reduce((m,e)=>Math.max(m,e.at),0);
   const lastD=S.sessions.filter(s=>s.cat==='D').reduce((m,s)=>Math.max(m,s.start),0);
   return{...w,plugToday,lastE,lastD,streak:Math.max(0,Math.floor((now-(lastE||S.created))/864e5)),dow:(new Date(now).getDay()+6)%7};
 }
@@ -583,7 +584,13 @@ function afterFinish(s){
     confetti();if(fxOn())fxWave();return showCard({big:'🏆',sub:`<b>Nowy rekord!</b> ${esc(D[1]())}: <b>${recFmt(D[3],v)}</b><br>poprzedni: ${recFmt(D[3],p)}${rest?'<br>'+rest:''}`,text:S.settings.msgs?pick('record',{}):''},()=>afterFinish2(s));}
   afterFinish2(s);
 }
+function startEjac(extra){const prev=status().streak,ps=planState();const e=Object.assign({id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:'',sw:false,kind:'full'},extra);
+  if(ps.mode!=='off')e.plan=!!ps.allowed;S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
+  const pool=e.kind==='ruined'?['ejac_ruined','ejac']:e.plan===true?['ejac_plan','ejac']:e.plan===false?['ejac_off','ejac']:'ejac';
+  const sub=`Seria: ${prev} d`+(e.plan===true?' · ✓ w planie — podwójne XP':e.plan===false?' · poza planem':'');
+  if(gfxOn()||e.plan===true||fxOn())confetti();fxSplash();showMsg(pick(pool,{dni:prev}),{icon:'cel_ejac',sub,btn:'Dalej',then:()=>openEntry('e',e.id,{finish:true})});}
 function afterFinish2(s){
+  if(s.cat==='M'){if(s.res==='none'&&wearMs(s)>=20*6e4){quick('ctrl_done',{});}return celebrate();}
   const then=()=>celebrate();
   if(s.cat==='D'&&s.ao>0){if(gfxOn())confetti();fxWave();return showMsg(pick('ao',{n:s.ao,tydz:status().ao}),{then,icon:'cel_ao'});}
   if(s.cat==='D')return showMsg(pick('dildo_done',{}),{then,icon:'cel_dildo'});
@@ -602,7 +609,7 @@ const YEV={
  1:{id:'ev_feb',em:'💘',t:()=>14,xp:400,lab:()=>`14 treningów ${alias('D')} w lutym`,v:x=>x.dN},
  2:{id:'ev_mar',em:'💎',t:()=>8,xp:400,lab:()=>`8 treningów dużych w marcu`,v:x=>x.bigN},
  3:{id:'ev_apr',em:'🌙',t:()=>10,xp:400,lab:()=>`10 nocy z ${alias('P')} w kwietniu`,v:x=>x.nightsN},
- 4:{id:'ev_may',em:'🏕️',t:()=>3,xp:400,lab:()=>`3 weekendy z ${alias('P')} ≥ 8 h`,v:x=>x.wk8N},
+ 4:{id:'ev_may',em:'✋',t:()=>8,xp:450,lab:()=>`8 sesji ${alias('M')} ≥ 20 min bez ${alias('E')}`,v:x=>x.mCtrl},
  5:{id:'ev_jun',em:'🙌',t:()=>6,xp:500,lab:()=>`${L('ao')} ×6 w czerwcu`,v:x=>x.ao},
  6:{id:'ev_jul',em:'〰️',t:()=>60,xp:400,lab:()=>`${L('edge')} ×60 w lipcu`,v:x=>x.edges},
  7:{id:'ev_aug',em:'✊',t:()=>S.sessions.some(s=>s.cat==='F')?6:16,xp:450,lab:()=>S.sessions.some(s=>s.cat==='F')?`6 sesji ${alias('F')} z rozgrzewką`:`16 treningów ${alias('D')} w sierpniu`,v:x=>S.sessions.some(s=>s.cat==='F')?x.fWarm:x.dN},
@@ -627,6 +634,11 @@ const BADGES=[
  ['lad_1','🪜','Nowy rozmiar','1 rozmiar opanowany',g=>g.mastered>=1],['lad_3','🪜','Trzy szczeble','3 rozmiary opanowane',g=>g.mastered>=3],
  ...Object.values(YEV).map(E=>[E.id,E.em,E.id,'event roczny',g=>g.evWon.has(E.id)]),
  ['sk_3','🪶','Swoboda','rozmiar na poziomie „swobodny”',g=>g.sk3>=1],['sk_4','🧨','Za mały!','rozmiar na poziomie „za mały”',g=>g.sk4>=1],['un_1','🔓','Zasłużony zakup','odblokowany zakup',g=>g.unlocked.length>=1],
+ ['e_hf','🙌','Bez rąk','1× E bez rąk',g=>g.hf>=1],['e_hf5','🙌','Bez rąk ×5','5× E bez rąk',g=>g.hf>=5],['e_ru','🛑','Zrujnowany','1× zrujnowany',g=>g.ruin>=1],['e_mk5','🥛','Dojenie ×5','5× dojenie',g=>g.milk>=5],
+ ['m_ct10','🎯','Mistrz kontroli','10× M ≥ 20 min bez E',g=>g.mCtrl>=10],['e_cer','🎊','Ceremonia','E w planie, intensywność 5',g=>g.cer>=1],['e_nw10','💧','Nic się nie marnuje','10× z rzędu bez straty',g=>g.swBest>=10],
+ ['e_toyall','🏷️','Pełna kolekcja','każdy przedmiot ochrzczony',g=>{const it=S.items.filter(i=>!i.planned&&(i.cat==='P'||i.cat==='D'));return it.length>=3&&it.every(i=>g.toyX.has(i.id));}],
+ ['e_pl1','🔌','Pierwsze zatkanie','1× zatkane',g=>g.plugN>=1],['e_pln','🌙','Zatkany na noc','zatkane przez noc',g=>g.plugNight>=1],['e_pl10','🔌','Pełny w środku ×10','10× zatkane',g=>g.plugN>=10],
+ ['e_d3','3️⃣','Trzy w jeden dzień','3× E jednego dnia',g=>g.eDayMax>=3],['e_r5','📆','5 dni z rzędu','E 5 dni z rzędu',g=>g.eRun>=5],['e_r7','📆','7 dni z rzędu','E 7 dni z rzędu',g=>g.eRun>=7],
  ['k_1','🔒','Pierwsze zamknięcie','1× K',g=>g.kN>=1],['k_24','⛓️','Doba w zamknięciu','K ≥ 24 h jednym ciągiem',g=>g.kMax>=24],['k_100','🗝️','100 godzin','100 h z K',g=>g.kH>=100],
  ['ev_nnn','🥜','Listopad bez E','cały listopad bez E',g=>g.nnnWins>=1],['ev_adv','🎄','Adwent','20 z 24 okienek',g=>g.advWins>=1],['mo_1','💀','Hardcore','1 wyzwanie miesiąca',g=>g.mDone>=1],['mo_10','☠️','Hardcore ×10','10 wyzwań miesiąca',g=>g.mDone>=10],
  ['tr_1','🏆','Trofeum miesiąca','komplet w miesiącu',g=>g.trophies>=1],['tr_6','🏆','6 trofeów','6× komplet',g=>g.trophies>=6],['pl_5','🎲','Zgodnie z planem','5× E w planie',g=>g.ePlan>=5]
@@ -643,6 +655,13 @@ const CH={
   dSess:{mk:()=>({n:1,xp:40}),lab:()=>`trening ${alias('D')}`,prog:(c,d)=>[d.d,1,'']},
   ring:{mk:r=>{const n=[30,45,60][r()*3|0];return{n,xp:20+(n/3|0)};},lab:c=>`${alias('R')} ${c.n} min`,prog:(c,d)=>[d.rMin,c.n,'min']},
   edge3:{mk:r=>{const n=[3,4,5][r()*3|0];return{n,xp:20+n*6};},lab:c=>`${L('edge')} ×${c.n} w jednej sesji`,prog:(c,d)=>[d.edgeMax,c.n,'']},
+  mEdge20:{mk:r=>{const n=[15,20,30][r()*3|0];return{n,xp:20+n};},lab:c=>`${alias('M')} ${c.n} min bez ${alias('E')}`,prog:(c,d)=>[d.mNoneMin,c.n,'min']},
+  mEdge5:{mk:()=>({n:5,xp:40}),lab:()=>`${L('edge')} ×5 w ${alias('M')} i stop`,prog:(c,d)=>[d.mNoneEdge,5,'']},
+  mPlug:{mk:()=>({n:1,xp:50}),lab:()=>`${alias('M')} z ${alias('P')} w środku`,prog:(c,d)=>[d.mWithP,1,'']},
+  eSw:{mk:()=>({n:1,xp:60}),lab:()=>`${alias('E')} · ${L('d_sw')}`,prog:(c,d)=>[d.eSw,1,'']},
+  eTwo:{mk:()=>({n:2,xp:70}),lab:()=>`${alias('E')} ×2 dziś`,prog:(c,d)=>[d.eN,2,'']},
+  ePlug:{mk:()=>({n:1,xp:80}),lab:()=>`${L('d_plug')} i noś 1 h`,prog:(c,d)=>[d.plug1h,1,'']},
+  eLick:{mk:()=>({n:1,xp:60}),lab:()=>`${alias('E')} ${L('d_toy')} · ${L('sw_lick')}`,prog:(c,d)=>[d.eLick,1,'']},
   fWarm:{mk:()=>({n:1,xp:70}),lab:()=>`${alias('F')} z rozgrzewką`,prog:(c,d)=>[d.fw,1,'']},
   dAO:{mk:()=>({n:1,xp:70}),lab:()=>`${alias('D')} z ${L('ao')}`,prog:(c,d)=>[d.ao,1,'']},
   big:{mk:r=>{const n=[15,20,30][r()*3|0];return{n,xp:30+n};},lab:c=>`trening duży ${c.n} min`,prog:(c,d)=>[d.bigMin,c.n,'min']},
@@ -651,20 +670,25 @@ const CH={
 function challengesFor(ds){
   const r=rng('ch'+dayKey(ds)),G=S.goals,hasBig=S.items.some(i=>i.big);
   const usedF=S.sessions.some(s=>s.cat==='F'),restNow=usedF&&fistState().inRest;
-  const p1=['plugH','dSess','edge3'].concat(G.rPerWeek?['ring']:[]),p2=['dAO'].concat(hasBig?['big']:[]).concat(G.rPerWeek?['combo']:[]).concat(usedF&&!restNow?['fWarm']:[]);
+  const mo=new Date(ds).getMonth(),eOK=(S.plan.mode==='off')&&mo!==9&&mo!==10;
+  const p1=['plugH','dSess','edge3','mEdge20','mEdge5'].concat(G.rPerWeek?['ring']:[]),p2=['dAO','mPlug'].concat(eOK?['eSw','eTwo','ePlug','eLick']:[]).concat(hasBig?['big']:[]).concat(G.rPerWeek?['combo']:[]).concat(usedF&&!restNow?['fWarm']:[]);
   const dw=new Date(ds).getDay(),mult=(dw===0||dw===6)?2:1;
   return [p1,p2].map(pl=>{const id=pl[r()*pl.length|0],c=CH[id].mk(r);return{id,n:c.n,xp:c.xp*mult,mult};});
 }
 function dayData(ds,now){
-  const de=addDays(ds,1);let pH=0,d=0,ao=0,bigMin=0,rMin=0,comboMin=0,f=0,fw=0,edgeMax=0;const P=[],R=[];
+  const de=addDays(ds,1);let pH=0,d=0,ao=0,bigMin=0,rMin=0,comboMin=0,f=0,fw=0,edgeMax=0,mNoneMin=0,mNoneEdge=0,mWithP=0,plug1h=0;const P=[],R=[],M=[];
   for(const s of S.sessions){const e=Math.min(s.end||now,now);if(e<ds||s.start>=de)continue;
     if(s.cat==='P'){if(isBig(s)){if(s.start>=ds)bigMin=Math.max(bigMin,(e-s.start)/6e4);}else pH+=Math.max(0,Math.min(e,de)-Math.max(s.start,ds))/36e5;P.push([s.start,e]);}
     else if(s.cat==='D'){if(s.start>=ds){d++;ao+=s.ao||0;}}
     else if(s.cat==='F'){if(s.start>=ds&&s.end){f++;if(s.warm)fw++;}}
     if(s.start>=ds&&s.edges)edgeMax=Math.max(edgeMax,s.edges);
+    if(s.cat==='M'&&s.start>=ds&&s.end){M.push([s.start,e]);if(s.res==='none'){mNoneMin=Math.max(mNoneMin,wearMs(s)/6e4);mNoneEdge=Math.max(mNoneEdge,s.edges||0);}}
+    if(s.cat==='P'&&s.cum&&s.start>=ds&&s.end&&wearMs(s)>=36e5)plug1h++;
     if(s.cat==='R'){if(s.start>=ds)rMin=Math.max(rMin,(e-s.start)/6e4);R.push([s.start,e]);}}
   for(const [a,b] of R)for(const [c,e2] of P){const o=Math.min(b,e2,de)-Math.max(a,c,ds);if(o>0)comboMin+=o/6e4;}
-  return{pH,d,ao,bigMin,rMin,comboMin,f,fw,edgeMax};
+  for(const [a,b] of M)if(P.some(([c,e2])=>c<=a&&e2>=b))mWithP++;
+  const evd=S.events.filter(x=>x.at>=ds&&x.at<de&&x.kind!=='milk');
+  return{pH,d,ao,bigMin,rMin,comboMin,f,fw,edgeMax,mNoneMin,mNoneEdge,mWithP,plug1h,eN:evd.length,eSw:evd.filter(x=>x.sw).length,eLick:evd.filter(x=>x.dest==='toy'&&x.lick).length};
 }
 const MCH={
   ao10:{t:10,xp:300,lab:()=>`${L('ao')} ×10 w miesiącu`,v:x=>x.ao},
@@ -682,12 +706,22 @@ const MCH={
   f4:{t:4,xp:300,need:'f',lab:()=>`4 sesje ${alias('F')} z rozgrzewką`,v:x=>x.fWarm},
   fC5:{t:1,xp:250,need:'f',lab:()=>`${alias('F')} na aktualnym etapie z komfortem 5`,v:x=>x.fC5},
   edge30:{t:30,xp:250,lab:()=>`${L('edge')} ×30 w miesiącu`,v:x=>x.edges},
+  eHF:{t:1,xp:500,need:'e',lab:()=>`${alias('E')} ${L('m_hf')}`,v:x=>x.hf},
+  eRuin3:{t:3,xp:250,need:'e',lab:()=>`3× ${L('k_ruined')}`,v:x=>x.ruin},
+  eMilk5:{t:5,xp:300,lab:()=>`5× ${L('k_milk')}`,v:x=>x.milk},
+  ePlan7:{t:1,xp:300,need:'e',lab:()=>`${alias('E')} w planie po ≥ 7 dniach przerwy`,v:x=>x.plan7},
+  eSwD5:{t:5,xp:300,need:'e',lab:()=>`${L('d_sw')} w 5 różnych dniach`,v:x=>x.swDays},
+  ePlugN:{t:1,xp:350,need:'e',lab:()=>`${L('d_plug')} na noc`,v:x=>x.plugNight},
+  ePlug3:{t:3,xp:250,need:'e',lab:()=>`3× ${L('d_plug')}`,v:x=>x.plugN},
+  eDay2:{t:2,xp:250,need:'e',lab:()=>`${alias('E')} ×2 jednego dnia`,v:x=>x.eDayMax},
+  eRun5:{t:5,xp:300,need:'e',lab:()=>`${alias('E')} 5 dni z rzędu`,v:x=>x.eRun},
+  mCtrl8:{t:8,xp:300,lab:()=>`8 sesji ${alias('M')} ≥ 20 min bez ${alias('E')}`,v:x=>x.mCtrl},
   lad1:{t:1,xp:300,need:'lad',lab:()=>`opanuj nowy rozmiar (3× komfort 4+)`,v:x=>x.lad}
 };
 function monthChallenges(y,m){
   const r=rng('m'+y+'-'+m),hasBig=S.items.some(i=>i.big),hasR=!!S.goals.rPerWeek;
   const hasF=S.sessions.some(s=>s.cat==='F'),hasLad=S.items.some(i=>i.dia||i.len);
-  const pool=Object.keys(MCH).filter(k=>!(MCH[k].need==='big'&&!hasBig)&&!(MCH[k].need==='r'&&!hasR)&&!(MCH[k].need==='f'&&!hasF)&&!(MCH[k].need==='lad'&&!hasLad)),out=[];
+  const pool=Object.keys(MCH).filter(k=>!(MCH[k].need==='e'&&(m===9||m===10))&&!(MCH[k].need==='big'&&!hasBig)&&!(MCH[k].need==='r'&&!hasR)&&!(MCH[k].need==='f'&&!hasF)&&!(MCH[k].need==='lad'&&!hasLad)),out=[];
   while(out.length<3&&pool.length){out.push(pool.splice(r()*pool.length|0,1)[0]);}
   const dim=new Date(y,m+1,0).getDate();
   return out.map(id=>({id,t:id==='pall'?dim:MCH[id].t,xp:MCH[id].xp,u:MCH[id].u||'',lab:mLab(id)}));
@@ -695,14 +729,14 @@ function monthChallenges(y,m){
 function mLab(id){const n=S.msg&&S.msg.mch&&S.msg.mch[id];return n?n+' — '+MCH[id].lab():MCH[id].lab();}
 function monthStats(y,m,now,dd,chByDay,nightSet){
   const a=new Date(y,m,1).getTime(),b=new Date(y,m+1,1).getTime(),inM=t=>t>=a&&t<b;
-  const ss=S.sessions.filter(x=>inM(x.start)),x={nightsN:0,wk8N:0,kDays:0,eN:0,fWarm:0,fC5:0,edges:0,lad:0,ao:0,aoMax:0,bigMax:0,bigN:0,dN:0,sw:0,chN:0,pDays:0,comboMax:0,wkMax:0,nightRun:0,noeRun:0};
+  const ss=S.sessions.filter(x=>inM(x.start)),x={hf:0,ruin:0,milk:0,plan7:0,swDays:0,plugNight:0,plugN:0,eDayMax:0,eRun:0,mCtrl:0,nightsN:0,wk8N:0,kDays:0,eN:0,fWarm:0,fC5:0,edges:0,lad:0,ao:0,aoMax:0,bigMax:0,bigN:0,dN:0,sw:0,chN:0,pDays:0,comboMax:0,wkMax:0,nightRun:0,noeRun:0};
   for(const s of ss){if(s.cat==='D'){x.dN++;x.ao+=s.ao||0;x.aoMax=Math.max(x.aoMax,s.ao||0);}
     if(s.cat==='P'&&isBig(s)){x.bigN++;if(s.end)x.bigMax=Math.max(x.bigMax,(s.end-s.start)/6e4);}}
   x.sw=S.events.filter(e=>inM(e.at)&&e.sw).length;
   const FSm=fistState(now);for(const s of ss){x.edges+=s.edges||0;if(s.cat==='F'&&s.end){if(s.warm)x.fWarm++;}}
   {let un=Math.min(6,S.fist.start||4);for(const s of S.sessions.filter(z=>z.cat==='F'&&z.end).sort((a,b)=>a.start-b.start)){if(inM(s.start)&&s.stage===un&&s.comfort===5)x.fC5++;const pr=FSm.promos.find(q=>q[0]===s.end);if(pr)un=pr[1];}}
   for(const c of ['P','D'])for(const l of ladder(c))if(l.mAt&&inM(l.mAt))x.lad++;
-  const Ed=new Set(S.events.map(e=>dayKey(e.at)));let run=0,nrun=0;const kSet=new Set();
+  const Ed=new Set(realE().map(e=>dayKey(e.at)));let run=0,nrun=0;const kSet=new Set();
   for(const s of S.sessions)if(s.cat==='K'){const e=Math.min(s.end||now,now);let d=dayStart(s.start);while(d<=e){kSet.add(dayKey(d));d=addDays(d,1);}}
   for(let d=a;d<b&&d<=now;d=addDays(d,1)){const k=dayKey(d),v=dd[k];
     if(v){if(v.pH>0||v.bigMin>0)x.pDays++;x.comboMax=Math.max(x.comboMax,v.comboMin);}
@@ -711,14 +745,20 @@ function monthStats(y,m,now,dd,chByDay,nightSet){
     nrun=nightSet.has(d)?nrun+1:0;x.nightRun=Math.max(x.nightRun,nrun);
     if(nightSet.has(d))x.nightsN++;if(kSet.has(k))x.kDays++;
     if(new Date(d).getDay()===6){const k2=dayKey(addDays(d,1)),wh=(v?v.pH:0)+(dd[k2]?dd[k2].pH:0);x.wkMax=Math.max(x.wkMax,wh);if(wh>=8)x.wk8N++;}}
-  x.eN=S.events.filter(e=>inM(e.at)).length;
+  x.eN=realE().filter(e=>inM(e.at)).length;
+  {const EA=[...S.events].sort((p,q)=>p.at-q.at);let prev=S.created;const sd=new Set(),cnt={};
+   for(const e of EA){const im=inM(e.at);if(e.kind==='milk'){if(im)x.milk++;continue;}
+     if(im){if(e.method==='hf')x.hf++;if(e.kind==='ruined')x.ruin++;if(e.plan===true&&e.at-prev>=7*864e5)x.plan7++;if(e.sw)sd.add(dayKey(e.at));if(e.dest==='plug')x.plugN++;const k=dayKey(e.at);cnt[k]=(cnt[k]||0)+1;}
+     prev=e.at;}
+   x.swDays=sd.size;x.eDayMax=Math.max(0,...Object.values(cnt));const ks=Object.keys(cnt).sort();let r=0,pv=null;for(const k of ks){r=pv&&dayKey(addDays(new Date(pv).getTime()+12*36e5,1))===k?r+1:1;x.eRun=Math.max(x.eRun,r);pv=k;}}
+  for(const s of ss){if(s.cat==='M'&&s.end&&s.res==='none'&&wearMs(s)>=20*6e4)x.mCtrl++;if(s.cat==='P'&&s.cum&&nightsOf(s,now).length)x.plugNight++;}
   return x;
 }
 function chProg(c,dd){const [v,t,u]=CH[c.id].prog(c,dd);return{v,t,u,done:v>=t};}
 function nightsOf(s,now=Date.now()){const out=[],end=Math.min(s.end||now,now);let d=dayStart(s.start);while(d<=end){if(s.start<=d+2*36e5&&end>=d+5*36e5&&pauseIn(s,d+2*36e5,d+5*36e5)<=30*6e4)out.push(d);d=addDays(d,1);}return out;}
 function planState(now=Date.now()){
   const P=S.plan||{mode:'off'};if(P.mode==='off')return{mode:'off'};
-  const lastE=S.events.reduce((m,e)=>Math.max(m,e.at),0),since=Math.floor((dayStart(now)-dayStart(lastE||S.created))/864e5);
+  const lastE=realE().reduce((m,e)=>Math.max(m,e.at),0),since=Math.floor((dayStart(now)-dayStart(lastE||S.created))/864e5);
   if(P.mode==='every'){const left=Math.max(0,P.n-since);return{mode:'every',allowed:left===0,left};}
   const k=dayKey(now),d=S.draws&&S.draws[k];return{mode:'dice',drawn:d!=null,allowed:d===true};
 }
@@ -788,8 +828,22 @@ function computeGame0(now=Date.now()){
     else if(s.cat==='K'&&s.end){kN++;kH+=h;kMax=Math.max(kMax,h);add(s.start,10+Math.min(20,Math.floor(h)),'K');}
     if(s.target&&s.end&&wearMs(s)>=s.target*6e4){targets++;add(s.end,15+Math.floor(s.target/10),'target');}}
   for(const n of nights)add(n+6*36e5,XPV.night,'night');
-  let sw=0,ePlan=0;const E=[...S.events].sort((a,b)=>a.at-b.at);
-  for(const e of E){add(e.at,e.plan===true?XPV.Eplan:e.plan===false?XPV.Eoff:XPV.E,'E');if(e.plan===true)ePlan++;if(e.sw){sw++;add(e.at,XPV.SW,'sw');}}
+  let sw=0,ePlan=0,hf=0,ruin=0,milk=0,plugN=0,cer=0,swRun=0,swBest=0;const toyX=new Set(),EA=[...S.events].sort((a,b)=>a.at-b.at),E=EA.filter(e=>e.kind!=='milk');
+  let prevRE=null;
+  for(const e of EA){
+    if(e.kind==='milk'){milk++;add(e.at,30,'milk');}
+    else{add(e.at,e.plan===true?XPV.Eplan:e.plan===false?XPV.Eoff:XPV.E,'E');if(e.plan===true)ePlan++;if(e.kind==='ruined'){ruin++;add(e.at,20,'E');}
+      if(e.plan===true&&(e.inten||0)>=5)cer++;
+      const keep=e.dest==='sw'||e.dest==='plug'||(e.dest==='toy'&&e.lick);swRun=keep?swRun+1:0;swBest=Math.max(swBest,swRun);prevRE=e;}
+    if(e.method==='hf'){hf++;add(e.at,100,'hf');}
+    if(e.sw){sw++;add(e.at,XPV.SW+(e.swm==='later'?10:0),'sw');}
+    if(e.dest==='toy'){add(e.at,10,'E');if(e.destItem)toyX.add(e.destItem);}
+    if(e.dest==='plug'){plugN++;add(e.at,30,'E');if(e.destItem)toyX.add(e.destItem);}}
+  const eDays={};for(const e of E){const k=dayKey(e.at);eDays[k]=(eDays[k]||0)+1;}
+  const eDayMax=Math.max(0,...Object.values(eDays));let eRun=0;{const ks=Object.keys(eDays).sort();let r=0,pv=null;for(const k of ks){r=pv&&dayKey(addDays(new Date(pv).getTime()+12*36e5,1))===k?r+1:1;eRun=Math.max(eRun,r);pv=k;}}
+  let mN=0,mCtrl=0,plugNight=0,plugMax=0;
+  for(const s of S.sessions){if(s.cat==='M'&&s.end){mN++;const mm=wearMs(s)/6e4;add(s.start,10+Math.min(20,Math.floor(mm/3)),'M');if(s.res==='none'&&mm>=20){mCtrl++;add(s.end,20,'ctrl');}}
+    if(s.cat==='P'&&s.cum){const w=Math.max(0,(s.end||now)-(s.cumAt||s.start)-pauseTotal(s,now));plugMax=Math.max(plugMax,w);if(nightsOf(s,now).length)plugNight++;}}
   let prev=S.created,bestNoE=0;const gaps=[];for(const e of E){gaps.push([prev,e.at]);prev=e.at;}gaps.push([prev,now]);
   for(const [a,b] of gaps){const gp=(b-a)/864e5;bestNoE=Math.max(bestNoE,gp);for(const m of MILESTONES)if(gp>=m)add(a+m*864e5,m*5,'noe');}
   let pw=0;for(let w=weekStart(S.created);w<weekStart(now);w=addDays(w,7)){const [m,t]=goalsMet(w);if(t&&m===t){pw++;add(addDays(w,7)-1,XPV.week,'week');}}
@@ -810,7 +864,7 @@ function computeGame0(now=Date.now()){
     if(y===ny&&m===nm)season={type:'yev',E,t,v,fail,done,left:new Date(y,m+1,0).getDate()-new Date(now).getDate()};}}
   if(all.length)for(let y=new Date(Math.min(...all)).getFullYear();y<=ny;y++){
     const na=new Date(y,10,1).getTime(),nb=new Date(y,11,1).getTime();
-    if(now>=na){const fail=S.events.some(e=>e.at>=na&&e.at<nb);if(!fail&&now>=nb){nnnWins++;add(nb-1,500,'event');}
+    if(now>=na){const fail=realE().some(e=>e.at>=na&&e.at<nb);if(!fail&&now>=nb){nnnWins++;add(nb-1,500,'event');}
       if(y===ny&&nm===10)season={type:'nnn',fail,day:new Date(now).getDate(),days:30};}
     const da=new Date(y,11,1).getTime();
     if(now>=da){let n=0;const days=[];for(let d=1;d<=24;d++){const ds=new Date(y,11,d).getTime();if(ds>now){days.push({d,fu:true});continue;}
@@ -821,7 +875,7 @@ function computeGame0(now=Date.now()){
       if(y===ny&&nm===11)season={type:'adv',days,n};}}
   const xp=Math.round(log.reduce((a,x)=>a+x[1],0));let Lv=1;while(lvlReq(Lv+1)<=xp)Lv++;
   return{xp,level:Lv,from:lvlReq(Lv),to:lvlReq(Lv+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw,
-    nights:nights.size,nightSet:nights,sw,ePlan,chDone,todayCh,targets,log,mDone,trophies,trophyList,curMonth,nnnWins,advWins,season,evWon,unlocked,sk3,sk4,kN,kH,kMax,FS,fN,fWarm,edges,mastered};
+    nights:nights.size,nightSet:nights,sw,ePlan,chDone,todayCh,targets,log,mDone,trophies,trophyList,curMonth,nnnWins,advWins,season,evWon,hf,ruin,milk,plugN,plugNight,plugMax,cer,swBest,toyX,eDayMax,eRun,mN,mCtrl,unlocked,sk3,sk4,kN,kH,kMax,FS,fN,fWarm,edges,mastered};
 }
 function xpBetween(g,a,b){return Math.round(g.log.filter(x=>x[0]>=a&&x[0]<b).reduce((s,x)=>s+x[1],0));}
 function monthReport(y,m){
@@ -1038,7 +1092,8 @@ function renderHist(){
 
 const RECS=[
  ['dur_P',()=>`najdłużej ${alias('P')}`,'⏱️','t'],['dur_big',()=>'najdłużej trening duży','💎','t'],['dur_D',()=>`najdłużej ${alias('D')}`,'🍆','t'],
- ['dur_F',()=>`najdłużej ${alias('F')}`,'✊','t'],['dur_R',()=>`najdłużej ${alias('R')}`,'⭕','t'],['dur_K',()=>`najdłużej ${alias('K')}`,'🔒','t'],
+ ['dur_F',()=>`najdłużej ${alias('F')}`,'✊','t'],['dur_M',()=>`najdłużej ${alias('M')}`,'✋','t'],['mnone',()=>`najdłużej ${alias('M')} bez ${alias('E')}`,'🎯','t'],['edgeE',()=>`${L('edge')} przed ${alias('E')}`,'〰️','n'],
+ ['eday',()=>`${alias('E')} w jednym dniu`,'3️⃣','n'],['erun',()=>`${alias('E')} dzień po dniu`,'📆','d'],['plugcum',()=>`najdłużej ${L('d_plug')}`,'🔌','t'],['swrun',()=>'bez straty z rzędu','💧','n'],['ml',()=>'największa ilość','🥛','ml'],['hf1',()=>`pierwszy ${L('m_hf')}`,'🙌','date'],['dur_R',()=>`najdłużej ${alias('R')}`,'⭕','t'],['dur_K',()=>`najdłużej ${alias('K')}`,'🔒','t'],
  ['ao',()=>`${L('ao')} w jednej sesji`,'🌟','n'],['edge',()=>`${L('edge')} w jednej sesji`,'〰️','n'],['dia',()=>`największa średnica (komfort 4+)`,'📏','mm'],
  ['len',()=>`najdłuższe ${alias('D')} (komfort 4+)`,'📐','len'],['stage',()=>`najwyższy etap ${alias('F')}`,'🖐️','st'],
  ['streak',()=>'najdłuższa seria','🔥','d'],['noe',()=>`najdłużej bez ${alias('E')}`,'🧊','d'],['nights',()=>'noce z rzędu','🌙','n'],
@@ -1048,18 +1103,22 @@ function records(excl){
   const R={},put=(k,v,at)=>{if(v>0&&(!R[k]||v>R[k].v))R[k]={v,at};};
   for(const s of S.sessions){if(!s.end||s.id===excl)continue;const w=wearMs(s);put(sessRecKey(s),w,s.end);put('ao',s.ao||0,s.end);put('edge',s.edges||0,s.end);
     const it=S.items.find(i=>i.id===s.itemId);if(it&&(s.comfort||0)>=4){if(s.cat==='P'&&it.dia)put('dia',it.dia,s.end);if(s.cat==='D'&&it.len)put('len',it.len,s.end);}
-    if(s.cat==='F'&&s.stage)put('stage',s.stage,s.end);}
-  if(!excl){const g=computeGame();put('streak',g.best,0);put('noe',g.bestNoE,0);
+    if(s.cat==='F'&&s.stage)put('stage',s.stage,s.end);
+    if(s.cat==='M'){if(s.res==='none')put('mnone',w,s.end);if(s.res==='E'||s.res==='ruin')put('edgeE',s.edges||0,s.end);}
+    if(s.cat==='P'&&s.cum)put('plugcum',Math.max(0,s.end-(s.cumAt||s.start)-pauseTotal(s)),s.end);}
+  for(const e of S.events){if(e.ml&&e.id!==excl)put('ml',e.ml,e.at);}
+  {const hfE=S.events.filter(e=>e.method==='hf').sort((a,b)=>a.at-b.at)[0];if(hfE)R.hf1={v:hfE.at,at:hfE.at};}
+  if(!excl){const g=computeGame();put('streak',g.best,0);put('noe',g.bestNoE,0);put('eday',g.eDayMax,0);put('erun',g.eRun,0);put('swrun',g.swBest,0);
     const ns=[...g.nightSet].sort((a,b)=>a-b);let run=0,best=0,prev=null;for(const n of ns){run=prev&&dayKey(addDays(prev,1))===dayKey(n)?run+1:1;best=Math.max(best,run);prev=n;}put('nights',best,0);
     const byD={},byW={};for(const [t,v] of g.log){const k=dayKey(t),w=dayKey(weekStart(t));byD[k]=(byD[k]||0)+v;byW[w]=(byW[w]||0)+v;}
     for(const v of Object.values(byD))put('xpday',Math.round(v),0);for(const v of Object.values(byW))put('xpweek',Math.round(v),0);}
   return R;
 }
-function recFmt(type,v){return type==='t'?dur(v):type==='d'?v+' d':type==='mm'?v+' mm':type==='len'?lenTxt({len:v,lenU:(S.items.find(i=>i.cat==='D'&&i.len)||{}).lenU||'in'}):type==='st'?fsName(v):type==='xp'?v+' XP':String(v);}
+function recFmt(type,v){return type==='date'?`${new Date(v).getDate()}.${pad2(new Date(v).getMonth()+1)}.${new Date(v).getFullYear()}`:type==='ml'?fnum(v,1).replace(',0','')+' ml':type==='t'?dur(v):type==='d'?v+' d':type==='mm'?v+' mm':type==='len'?lenTxt({len:v,lenU:(S.items.find(i=>i.cat==='D'&&i.len)||{}).lenU||'in'}):type==='st'?fsName(v):type==='xp'?v+' XP':String(v);}
 function recordsCard(){
   const R=records();const rows=RECS.filter(([k])=>R[k]&&(k!=='dur_K'||catOn('K')));
   if(!rows.length)return '';
-  return `<div class="sec">🏆 Rekordy</div><div class="lad" style="background:linear-gradient(160deg,#3A3018,var(--card) 60%);border-color:#6A5520"><div class="wtiles">${rows.map(([k,lab,em,ty])=>{const r=R[k];return `<div class="wt"><small>${em} ${esc(lab())}</small><b class="num">${recFmt(ty,r.v)}</b>${r.at?`<small style="color:var(--tx3)">${new Date(r.at).getDate()}.${pad2(new Date(r.at).getMonth()+1)}.${new Date(r.at).getFullYear()}</small>`:''}</div>`;}).join('')}</div></div>`;
+  return `<div class="sec">🏆 Rekordy</div><div class="lad" style="background:linear-gradient(160deg,#3A3018,var(--card) 60%);border-color:#6A5520"><div class="wtiles">${rows.map(([k,lab,em,ty])=>{const r=R[k];return `<div class="wt"><small>${em} ${esc(lab())}</small><b class="num">${recFmt(ty,r.v)}</b>${r.at&&ty!=='date'?`<small style="color:var(--tx3)">${new Date(r.at).getDate()}.${pad2(new Date(r.at).getMonth()+1)}.${new Date(r.at).getFullYear()}</small>`:''}</div>`;}).join('')}</div></div>`;
 }
 function recordBeat(s){
   const prev=records(s.id),out=[];const chk=(k,v)=>{const p=prev[k];if(v>0&&p&&v>p.v)out.push([k,v,p.v]);};
@@ -1073,7 +1132,7 @@ function yearCal(){
   for(const s of S.sessions){const e=Math.min(s.end||now,now);if(e<a||s.start>=b)continue;
     if(s.cat==='P'&&!isBig(s)){let d=dayStart(Math.max(s.start,a));while(d<=e&&d<b){get(dayKey(d)).p=1;d=addDays(d,1);}}
     else if(s.start>=a){const o=get(dayKey(s.start));if(s.cat==='P')o.big=1;if(s.cat==='D'){o.d=1;if(s.ao)o.ao=1;}if(s.cat==='R')o.r=1;if(s.cat==='F')o.f=1;if(s.cat==='K')o.k=1;}}
-  for(const e of S.events)if(e.at>=a&&e.at<b)get(dayKey(e.at)).e=1;
+  for(const e of realE())if(e.at>=a&&e.at<b)get(dayKey(e.at)).e=1;
   for(const n of g.nightSet)if(n>=a&&n<b)get(dayKey(n)).n=1;
   const C={ao:'#FFD86B',k:S.cats.K.color,f:S.cats.F.color,big:'#B28DFF',d:S.cats.D.color,n:'#3B5BDB',p:S.cats.P.color,r:S.cats.R.color};
   let cells='';const st=addDays(a,-((new Date(a).getDay()+6)%7));let cnt=0;
@@ -1088,7 +1147,7 @@ function yearCal(){
 }
 function renderStats(){
   const c=stat.cat,isS=c!=='E',now=Date.now();
-  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:wearMs(s),r:s.rating,item:s.itemId,ao:s.ao||0})):S.events.map(e=>({t:e.at,r:e.rating,sw:!!e.sw,plan:e.plan}))).sort((a,b)=>a.t-b.t);
+  const all=(isS?S.sessions.filter(s=>s.cat===c&&s.end).map(s=>({t:s.start,d:wearMs(s),r:s.rating,item:s.itemId,ao:s.ao||0})):S.events.map(e=>({t:e.at,r:e.rating,sw:!!e.sw,plan:e.plan,o:e}))).sort((a,b)=>a.t-b.t);
   const from=stat.range?now-stat.range*864e5:(all.length?all[0].t:now);
   const LL=all.filter(x=>x.t>=from),days=Math.max(1,(now-from)/864e5),n=LL.length;
   const rated=LL.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
@@ -1102,7 +1161,8 @@ function renderStats(){
   if(isS){const ds=LL.map(x=>x.d).sort((a,b)=>a-b),tot=ds.reduce((s,x)=>s+x,0),med=ds.length?(ds.length%2?ds[(ds.length-1)/2]:(ds[ds.length/2-1]+ds[ds.length/2])/2):0;
     h+=K('łączny czas',n?dur(tot):'—')+K('mediana sesji',n?dur(med):'—')+K('najdłuższa sesja',n?dur(ds[ds.length-1]):'—')+K('średnio / tydzień',n?dur(tot/(days/7)):'—');}
   if(c==='D')h+=K(esc(L('ao_long')),LL.reduce((a,x)=>a+x.ao,0))+K('sesje z '+esc(L('ao')),LL.filter(x=>x.ao).length);
-  if(c==='E')h+=K(esc(L('sw_long')),LL.filter(x=>x.sw).length)+K('w planie',LL.filter(x=>x.plan===true).length);
+  if(c==='E')h+=K(esc(L('sw_long')),LL.filter(x=>x.sw).length)+K('w planie',LL.filter(x=>x.plan===true).length)+K(esc(L('m_hf')),LL.filter(x=>x.o.method==='hf').length)+K(esc(L('d_plug')),LL.filter(x=>x.o.dest==='plug').length);
+  if(c==='M'){const ms=S.sessions.filter(s=>s.cat==='M'&&s.end&&s.start>=from);h+=K('bez '+alias('E'),ms.filter(s=>s.res==='none').length)+K('kontrola (≥ 20 min)',ms.filter(s=>s.res==='none'&&wearMs(s)>=12e5).length);}
   h+=K('od ostatniego',cur!=null?dur(cur):'—')+K('najdłuższa przerwa',n?dur(longest):'—')+K('średnia ocena',avgR?fnum(avgR):'—')+'</div>';
   // heatmap: 17 tygodni, kolumny = tygodnie (pn–nd)
   const cnt={};for(const x of all){const k=dayKey(x.t);cnt[k]=(cnt[k]||0)+1;}
@@ -1113,6 +1173,11 @@ function renderStats(){
     h+=k>todayK?'<i></i>':`<i style="background:${v?col:'#36363A'};opacity:${v?[0,.45,.75,1][Math.min(3,v)]:1}"></i>`;}
   h+='</div>';
   const dow=Array(7).fill(0),hr=Array(24).fill(0);for(const x of LL){const d=new Date(x.t);dow[(d.getDay()+6)%7]++;hr[d.getHours()]++;}
+  if(c==='E'&&LL.length){const dist=(f,opts)=>`<div class="card">${opts.map(([v,l])=>{const n=LL.filter(x=>f(x.o)===v).length,pc=Math.round(n/LL.length*100);return `<div class="chl"><div class="t" style="font-size:12px"><span>${esc(l)}</span><small class="num">${n} · ${pc}%</small></div><div class="pbar"><i style="width:${pc}%"></i></div></div>`;}).join('')}</div>`;
+    h+='<div class="sec">Rodzaj i metoda</div>'+dist(o=>o.kind||'full',[['full',L('k_full')],['ruined',L('k_ruined')],['milk',L('k_milk')]])+dist(o=>o.method||'',[['hand',L('m_hand')],['toy',L('m_toy')],['hf',L('m_hf')],['cage',L('m_cage')],['','nie podano']]);
+    const EA=[...S.events].filter(e=>e.kind!=='milk').sort((a,b)=>a.at-b.at),bk=[[0,1,'0–1 d'],[2,3,'2–3 d'],[4,7,'4–7 d'],[8,9999,'8+ d']],acc=bk.map(()=>({n:0,i:0,ni:0,ml:0,nm:0}));
+    EA.forEach((e,ix)=>{if(!ix)return;const gap=Math.floor((e.at-EA[ix-1].at)/864e5),b=bk.findIndex(([a,z])=>gap>=a&&gap<=z),A=acc[b];A.n++;if(e.inten){A.i+=e.inten;A.ni++;}if(e.ml){A.ml+=e.ml;A.nm++;}});
+    h+=`<div class="sec">Intensywność wg dni przerwy</div><div class="card"><table><tr><th>przerwa</th><th class="r">×</th><th class="r">śr. intens.</th><th class="r">śr. ml</th></tr>${bk.map((b,i)=>`<tr><td>${b[2]}</td><td class="r num">${acc[i].n}</td><td class="r num">${acc[i].ni?fnum(acc[i].i/acc[i].ni):'—'}</td><td class="r num">${acc[i].nm?fnum(acc[i].ml/acc[i].nm):'—'}</td></tr>`).join('')}</table></div>`;}
   const bars=(arr,labels)=>{const mx=Math.max(1,...arr);return `<div class="bars">${arr.map(v=>`<div style="height:${v/mx*100}%;background:${col}"></div>`).join('')}</div><div class="bl">${labels.map(l=>`<span>${l}</span>`).join('')}</div>`;};
   h+='<div class="sec">Dzień tygodnia</div>'+bars(dow,['pn','wt','śr','cz','pt','sb','nd']);
   h+='<div class="sec">Godzina rozpoczęcia</div>'+bars(hr,hr.map((_,i)=>i%6===0?i:''));
@@ -1189,7 +1254,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v19.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v20.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1214,12 +1279,13 @@ function openEntry(k,id,opt={}){
       h+=`<div class="two"><label><span class="f">START</span><input type="datetime-local" data-in="start" value="${toInput(w.start)}"></label><label><span class="f">KONIEC</span><input type="datetime-local" data-in="end" value="${w.end?toInput(w.end):''}"></label></div>`;
       h+=`<p class="sub2 num" id="durl">${w.end?dur(wearMs(w)):'trwa'}${w.pauses&&w.pauses.length?` · przerwy: ${w.pauses.length} (${dur(pauseTotal(w))}, nie wliczane)`:''}</p>`;
       const its=S.items.filter(i=>i.cat===w.cat&&!i.planned);
-      if(w.cat!=='F')h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
+      if(w.cat!=='F'&&w.cat!=='M')h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
       if(w.cat==='F'){const F=fistState();
         h+=`<span class="f">ETAP</span><div class="chips">${[1,2,3,4,5,6].map(n=>`<button class="chip${w.stage===n?' on':''}" data-x="stage" data-v="${n}">${esc(fsName(n))}${n>F.un?' 🔒':''}</button>`).join('')}</div>
           <p class="hint" style="margin-top:6px">Odblokowany: ${esc(fsName(F.un))} · awans po 3 sesjach na tym etapie z komfortem 4+ (${F.cnt}/3)${F.inRest&&isNew?` · trwa przerwa do ${hm(F.restUntil)} — sesja nie liczy się do awansu`:''}</p>
           <span class="f">PRZYGOTOWANIE</span><div class="chips"><button class="chip${w.warm?' on':''}" data-x="warm">rozgrzewka (+15 XP)</button><button class="chip${w.glove?' on':''}" data-x="glove">rękawiczka (+5 XP)</button></div>`;}
-      if(w.cat!=='R')h+=`<span class="f">KOMFORT</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${w.comfort===n?' on':''}" data-x="comfort" data-v="${n}">${n}</button>`).join('')}</div>`;
+      if(w.cat==='M')h+=`<span class="f">ZAKOŃCZENIE</span><div class="chips">${[['none','bez '+alias('E')+' (kontrola)'],['E',alias('E')+' · '+L('k_full')],['ruin',L('k_ruined')]].map(([v,l])=>`<button class="chip${(w.res||'none')===v?' on':''}" data-x="res" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
+      if(w.cat!=='R'&&w.cat!=='M')h+=`<span class="f">KOMFORT</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${w.comfort===n?' on':''}" data-x="comfort" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(w.cat!=='P')h+=`<span class="f">${esc(L('edge')).toUpperCase()} (bez wytrysku)</span><div class="chips">${[0,1,2,3,4,5,6,8,10].map(n=>`<button class="chip${(w.edges||0)===n?' on':''}" data-x="edges" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(w.cat==='D')h+=`<span class="f">${esc(L('ao_long')).toUpperCase()}</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${(w.ao||0)===n?' on':''}" data-x="ao" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(!isNew){const n=S.events.filter(e=>e.sessionId===w.id).length;h+=`<span class="f">ZDARZENIA ${alias('E')} W TRAKCIE</span><div class="chips"><span class="chip ro num">${n}</span><button class="chip" data-x="addev">+ dodaj</button></div>`;}
@@ -1228,7 +1294,18 @@ function openEntry(k,id,opt={}){
       const ov=S.sessions.filter(s=>s.start<=w.at&&(s.end||Date.now())>=w.at);
       h+=`<span class="f">PODCZAS SESJI</span><div class="chips"><button class="chip${!w.sessionId?' on':''}" data-x="sess" data-v="">brak</button>${ov.map(s=>`<button class="chip${w.sessionId===s.id?' on':''}" data-x="sess" data-v="${s.id}">${alias(s.cat)} od ${hm(s.start)}</button>`).join('')}</div>`;
       const tags=[...new Set(S.events.map(e=>e.tag).filter(Boolean))];
-      h+=`<span class="f">${esc(L('sw_long')).toUpperCase()}</span><div class="chips"><button class="chip${!w.sw?' on':''}" data-x="sw" data-v="0">nie</button><button class="chip${w.sw?' on':''}" data-x="sw" data-v="1">tak (+${XPV.SW} XP)</button></div>`;
+      const ch=(x,v,l,on)=>`<button class="chip${on?' on':''}" data-x="${x}" data-v="${v}">${esc(l)}</button>`;
+      h+=`<span class="f">RODZAJ</span><div class="chips">${[['full',L('k_full')],['ruined',L('k_ruined')+' +20'],['milk',L('k_milk')+' +30']].map(([v,l])=>ch('ekind',v,l,(w.kind||'full')===v)).join('')}</div>`;
+      if(w.kind==='milk')h+=`<p class="hint" style="margin-top:6px">${esc(L('k_milk'))} nie zeruje licznika bez ${alias('E')} ani eventów.</p>`;
+      h+=`<span class="f">METODA</span><div class="chips">${[['hand',L('m_hand')],['toy',L('m_toy')],['hf',L('m_hf')+' +100'],['cage',L('m_cage')]].map(([v,l])=>ch('emeth',v,l,w.method===v)).join('')}</div>`;
+      h+=`<span class="f">INTENSYWNOŚĆ</span><div class="chips">${[1,2,3,4,5].map(n=>ch('einten',n,String(n),w.inten===n)).join('')}</div>`;
+      h+=`<span class="f">ILOŚĆ</span><div class="two" style="display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center"><div class="chips">${[['low','mało'],['mid','średnio'],['high','dużo']].map(([v,l])=>ch('eamt',v,l,w.amt===v)).join('')}</div><input type="number" inputmode="decimal" step="0.1" data-in="ml" value="${w.ml||''}" placeholder="ml"></div>`;
+      h+=`<span class="f">CO DALEJ</span><div class="chips">${[['sw',L('d_sw')+' +20'],['toy',L('d_toy')+' +10'],['plug',L('d_plug')+' +30'],['body',L('d_body')],['other',L('d_other')]].map(([v,l])=>ch('edest',v,l,w.dest===v)).join('')}</div>`;
+      if(w.dest==='sw')h+=`<div class="chips" style="margin-top:6px">${[['hand',L('sw_hand')],['lick',L('sw_lick')],['later',L('sw_later')+' +10']].map(([v,l])=>ch('eswm',v,l,(w.swm||'hand')===v)).join('')}</div>`;
+      if(w.dest==='toy'||w.dest==='plug'){const its2=S.items.filter(i=>!i.planned&&(w.dest==='plug'?i.cat==='P':(i.cat==='P'||i.cat==='D')));
+        h+=`<div class="chips" style="margin-top:6px">${its2.map(i=>ch('eitem',i.id,i.alias,w.destItem===i.id)).join('')||'<span class="hint">Dodaj przedmioty w zakładce Przedmioty</span>'}</div>`;
+        if(w.dest==='toy')h+=`<div class="chips" style="margin-top:6px">${ch('elick',1,L('sw_lick')+' (+'+XPV.SW+')',w.lick)}</div>`;
+        if(w.dest==='plug'&&!w.plugSid)h+=`<p class="hint" style="margin-top:6px">Po zapisaniu ruszy sesja ${alias('P')} oznaczona 💧 (albo oznaczy się trwająca).</p>`;}
       if(w.plan!=null)h+=`<span class="f">PLAN</span><div class="chips"><span class="chip ro">${w.plan?'✓ w planie':'poza planem'}</span></div>`;
       h+=`<span class="f">KONTEKST</span><input type="text" data-in="tag" list="tagl" maxlength="30" value="${esc(w.tag)}" placeholder="własny znacznik (opcjonalnie)"><datalist id="tagl">${tags.map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
     }
@@ -1241,7 +1318,10 @@ function openEntry(k,id,opt={}){
     if(x==='cat'){w.cat=v;w.itemId=null;redraw();}
     else if(x==='item'){w.itemId=w.itemId===v?null:v;redraw();}
     else if(x==='ao'){w.ao=+v;redraw();}
-    else if(x==='sw'){w.sw=v==='1';redraw();}
+    else if(x==='res'){w.res=v;redraw();}
+    else if(x==='emeth'){w.method=w.method===v?null:v;redraw();}else if(x==='ekind'){w.kind=v;redraw();}else if(x==='einten'){w.inten=w.inten===+v?null:+v;redraw();}
+    else if(x==='eamt'){w.amt=w.amt===v?null:v;redraw();}else if(x==='edest'){w.dest=w.dest===v?null:v;redraw();}else if(x==='eswm'){w.swm=v;redraw();}
+    else if(x==='eitem'){w.destItem=w.destItem===v?null:v;redraw();}else if(x==='elick'){w.lick=!w.lick;redraw();}
     else if(x==='stage'){w.stage=+v;redraw();}else if(x==='warm'){w.warm=!w.warm;redraw();}else if(x==='glove'){w.glove=!w.glove;redraw();}
     else if(x==='comfort'){w.comfort=w.comfort===+v?null:+v;redraw();}else if(x==='edges'){w.edges=+v;redraw();}
     else if(x==='rate'){w.rating=w.rating===+v?null:+v;redraw();}
@@ -1263,12 +1343,16 @@ function openEntry(k,id,opt={}){
         if(!w.end&&S.sessions.some(s=>s.id!==w.id&&s.cat===w.cat&&!s.end))return err('Ta kategoria już trwa — podaj koniec');
       }else if(!w.at)return err('Podaj czas');
       if(k==='e'&&w.sessionId){const s=S.sessions.find(z=>z.id===w.sessionId);if(!s||s.start>w.at||(s.end&&s.end<w.at))w.sessionId=null;}
+      if(k==='e'){w.sw=w.dest==='sw'||(w.dest==='toy'&&!!w.lick);if(!w.kind)w.kind='full';
+        if(w.dest==='plug'&&!w.plugSid){let ps=S.sessions.find(z=>z.cat==='P'&&!z.end);if(ps){ps.cum=true;ps.cumAt=w.at;if(!ps.itemId&&w.destItem)ps.itemId=w.destItem;}else{ps={id:uid(),cat:'P',start:w.at,end:null,itemId:w.destItem||null,rating:null,note:'',cum:true,cumAt:w.at};S.sessions.push(ps);}w.plugSid=ps.id;}}
       if(isNew)arr.push(w);else Object.assign(o,w);
+      if(k==='s'){const ss=isNew?w:o;if(ss.cat==='M'&&ss.end&&(ss.res==='E'||ss.res==='ruin')&&!S.events.some(z=>z.sessionId===ss.id)){save();closeSheet();return startEjac({at:ss.end,sessionId:ss.id,kind:ss.res==='ruin'?'ruined':'full',method:'hand'});}}
       save();closeSheet();if(opt.finish&&k==='s')afterFinish(o);else if(opt.finish)celebrate();else{render();toast('Zapisano');}
     }
   },ev=>{
     const n=ev.target.dataset.in;if(!n)return;
     if(n==='start'||n==='end'||n==='at'){w[n]=fromInput(ev.target.value);const dl=$('#durl');if(dl&&k==='s')dl.textContent=w.end&&w.start?dur(w.end-w.start):'trwa';}
+    else if(n==='ml'){const v=parseFloat(String(ev.target.value).replace(',','.'));w.ml=v>0?Math.round(v*10)/10:null;}
     else w[n]=ev.target.value;
   });
 }
@@ -1352,7 +1436,8 @@ const ACT={
   pause(d){const s=S.sessions.find(x=>x.id===d.id);if(!s||s.pauseAt)return;s.pauseAt=Date.now();save();render();},
   resume(d){const s=S.sessions.find(x=>x.id===d.id);if(!s||!s.pauseAt)return;s.pauses=(s.pauses||[]).concat([[s.pauseAt,Date.now()]]);s.pauseAt=null;save();render();},
   stop(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;if(s.pauseAt){s.end=s.pauseAt;s.pauseAt=null;}else s.end=Date.now();save();render();openEntry('s',s.id,{finish:true});},
-  event(){const prev=status().streak,ps=planState();const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:'',sw:false};
+  event(){startEjac({});},
+  _evOld(){const prev=status().streak,ps=planState();const e={id:uid(),at:Date.now(),rating:null,sessionId:null,tag:'',note:'',sw:false};
     if(ps.mode!=='off')e.plan=!!ps.allowed;S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
     const pool=e.plan===true?['ejac_plan','ejac']:e.plan===false?['ejac_off','ejac']:'ejac';
     const sub=`Seria: ${prev} d`+(e.plan===true?' · ✓ w planie — podwójne XP':e.plan===false?' · poza planem':'');
