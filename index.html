@@ -277,6 +277,7 @@ body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:
     <div id="lockTitle">Dziennik</div>
     <div class="dots" id="dots"></div>
     <div id="lockMsg"></div>
+    <button id="faceBtn" data-act="face" hidden style="background:linear-gradient(160deg,#3A3A40,#24242A);border:1px solid #4A4A50;border-radius:14px;padding:10px 18px;font-size:15px">🙂 Odblokuj Face ID</button>
     <div class="pad">
       <button data-act="pin" data-v="1">1</button><button data-act="pin" data-v="2">2</button><button data-act="pin" data-v="3">3</button>
       <button data-act="pin" data-v="4">4</button><button data-act="pin" data-v="5">5</button><button data-act="pin" data-v="6">6</button>
@@ -372,7 +373,33 @@ function unb64(s){const bin=atob(s),b=new Uint8Array(bin.length);for(let i=0;i<b
 async function derive(pass,salt,iter){const base=await crypto.subtle.importKey('raw',te.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
 async function seal(key,str){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,te.encode(str));return{iv:b64(iv),ct:b64(ct)};}
 async function unseal(key,box){const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(box.iv)},key,unb64(box.ct));return JSON.parse(td.decode(pt));}
-const persist=()=>idb.set('vault',{salt:META.salt,iter:META.iter,fails:META.fails||0,wipe:META.wipe,iv:BOX&&BOX.iv,ct:BOX&&BOX.ct});
+const persist=()=>idb.set('vault',{v:META.v||1,salt:META.salt,iter:META.iter,fails:META.fails||0,wipe:META.wipe,wPin:META.wPin,wFace:META.wFace,iv:BOX&&BOX.iv,ct:BOX&&BOX.ct});
+let DKRAW=null;
+async function newDK(){const k=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);DKRAW=b64(await crypto.subtle.exportKey('raw',k));return k;}
+const importDK=raw=>crypto.subtle.importKey('raw',unb64(raw),{name:'AES-GCM'},false,['encrypt','decrypt']);
+async function wrapPin(pinv){const salt=crypto.getRandomValues(new Uint8Array(16));const kek=await derive(pinv,salt,ITER);META.salt=b64(salt);META.iter=ITER;META.wPin=await seal(kek,JSON.stringify(DKRAW));META.v=2;}
+const faceOK=()=>!!(window.PublicKeyCredential&&navigator.credentials&&window.isSecureContext);
+async function faceGet(wf){
+  const cred=await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rpId:location.hostname,allowCredentials:[{type:'public-key',id:unb64(wf.id)}],userVerification:'required',timeout:60000,extensions:{prf:{eval:{first:unb64(wf.salt)}}}}});
+  const r=cred.getClientExtensionResults(),out=r&&r.prf&&r.prf.results&&r.prf.results.first;if(!out)throw new Error('Ten iPhone nie zwrócił klucza PRF (wymagany iOS 18+ i pęk kluczy iCloud).');
+  return crypto.subtle.importKey('raw',out,{name:'AES-GCM'},false,['encrypt','decrypt']);
+}
+async function faceEnroll(){
+  const salt=crypto.getRandomValues(new Uint8Array(32));
+  const cred=await navigator.credentials.create({publicKey:{rp:{name:'Dziennik',id:location.hostname},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:'dziennik',displayName:'Dziennik'},challenge:crypto.getRandomValues(new Uint8Array(32)),
+    pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],authenticatorSelection:{authenticatorAttachment:'platform',residentKey:'required',userVerification:'required'},timeout:60000,extensions:{prf:{eval:{first:salt}}}}});
+  const ext=cred.getClientExtensionResults()||{};if(ext.prf&&ext.prf.enabled===false)throw new Error('Brak obsługi PRF — Face ID nie może chronić klucza (wymagany iOS 18+).');
+  const wf={id:b64(cred.rawId),salt:b64(salt)};let key;
+  const first=ext.prf&&ext.prf.results&&ext.prf.results.first;
+  if(first)key=await crypto.subtle.importKey('raw',first,{name:'AES-GCM'},false,['encrypt','decrypt']);else key=await faceGet(wf);
+  wf.iv=null;const box=await seal(key,JSON.stringify(DKRAW));wf.iv=box.iv;wf.ct=box.ct;META.wFace=wf;await persist();
+}
+async function faceUnlock(){
+  if(!META||!META.wFace||busyOn)return;
+  try{const key=await faceGet(META.wFace);busy(true,'Odszyfrowywanie…');const raw=await unseal(key,META.wFace);DKRAW=raw;KEY=await importDK(raw);S=await unseal(KEY,BOX);migrate();
+    if(META.fails){META.fails=0;await persist();}pin='';busy(false);enterApp();}
+  catch(e){busy(false);S=null;KEY=null;renderLock(e&&e.name==='NotAllowedError'?'Face ID anulowane — użyj PIN-u':'Face ID nie zadziałało — użyj PIN-u');}
+}
 function save(){_gc=null;if(!S||!KEY)return saving;const snap=JSON.stringify(S),key=KEY;saving=saving.then(async()=>{BOX=await seal(key,snap);await persist();}).catch(()=>toast('Błąd zapisu'));return saving;}
 function newState(){return{v:1,created:Date.now(),cats:JSON.parse(JSON.stringify(DEF)),items:[],sessions:[],events:[],settings:{autolock:60}};}
 function migrate(){
@@ -393,9 +420,10 @@ function migrate(){
 function renderLock(msg){
   $('#lockTitle').textContent=mode==='setup1'?'Ustaw PIN (4–8 cyfr, zalecane 6+)':mode==='setup2'?'Powtórz PIN':'Dziennik';
   $('#lockMsg').textContent=msg||'';
+  const fb=$('#faceBtn');if(fb)fb.hidden=!(mode==='unlock'&&META&&META.wFace);
   $('#dots').innerHTML=Array.from({length:Math.max(4,pin.length)},(_,i)=>`<i class="${i<pin.length?'f':''}"></i>`).join('');
 }
-function showLock(msg){shownXP=null;delete document.documentElement.dataset.theme;S=null;KEY=null;clearInterval(tick);closeSheet();$('#app').hidden=true;$('#lock').hidden=false;pin='';renderLock(msg);}
+function showLock(msg){DKRAW=null;shownXP=null;delete document.documentElement.dataset.theme;S=null;KEY=null;clearInterval(tick);closeSheet();$('#app').hidden=true;$('#lock').hidden=false;pin='';renderLock(msg);}
 function lock(){if(!S)return;mode=META?'unlock':'setup1';showLock();}
 function enterApp(){$('#lock').hidden=true;$('#app').hidden=false;tab='now';render();clearInterval(tick);tick=setInterval(updateLive,1000);checks();}
 async function submitPin(){
@@ -405,15 +433,16 @@ async function submitPin(){
     if(pin!==firstPin){mode='setup1';pin='';renderLock('PIN-y się różnią');return;}
     busy(true,'Tworzenie klucza…');
     const salt=crypto.getRandomValues(new Uint8Array(16));
-    META={salt:b64(salt),iter:ITER,fails:0,wipe:10};
-    KEY=await derive(pin,salt,ITER);S=newState();migrate();pin='';firstPin='';
+    META={v:2,salt:b64(salt),iter:ITER,fails:0,wipe:10};
+    KEY=await newDK();await wrapPin(pin);S=newState();migrate();pin='';firstPin='';
     await save();busy(false);enterApp();return;
   }
   busy(true,'Odszyfrowywanie…');
   try{
-    const key=await derive(pin,unb64(META.salt),META.iter);
-    S=await unseal(key,BOX);KEY=key;migrate();
-    if(META.fails){META.fails=0;await persist();}
+    const kek=await derive(pin,unb64(META.salt),META.iter);
+    if(META.wPin){const raw=await unseal(kek,META.wPin);DKRAW=raw;KEY=await importDK(raw);S=await unseal(KEY,BOX);}
+    else{S=await unseal(kek,BOX);KEY=await newDK();await wrapPin(pin);}
+    migrate();META.fails=0;await save();
     pin='';busy(false);enterApp();
   }catch(e){
     S=null;KEY=null;META.fails=(META.fails||0)+1;pin='';
@@ -1157,10 +1186,10 @@ function renderSet(){
    ${S.plan.mode==='every'?`<label class="grow">co ile dni<input type="number" inputmode="numeric" min="1" max="90" value="${S.plan.n}" data-set="pl_n"></label>`:''}${S.plan.mode==='dice'?`<label class="grow">szansa (%)<select data-set="pl_p">${[5,10,15,20,25,30,40,50].map(v=>`<option value="${v}"${S.plan.p===v?' selected':''}>${v}%</option>`).join('')}</select></label>`:''}</div>
    <div class="info">${alias('E')} w planie: 50 XP i podwójna celebracja. Poza planem: 10 XP — nadal celebracja, ale mniej punktów. Losowanie: raz dziennie przyciskiem na ekranie Teraz.</div></div>
   <button class="setbtn" data-act="impMsg">Importuj pakiet komunikatów</button>${S.msg?'<button class="setbtn" data-act="defMsg">Przywróć domyślne komunikaty</button>':''}`;
-  h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>`;
+  h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v18.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v19.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1353,12 +1382,17 @@ const ACT={
   addItem(){openItem(null);},
   editItem(d){openItem(d.id);},
   lock(){lock();},
+  face(){faceUnlock();},
+  faceOn(){if(!faceOK()){toast('Ta przeglądarka nie obsługuje Face ID dla stron');return;}
+    if(!DKRAW){toast('Zablokuj i odblokuj PIN-em, potem spróbuj ponownie');return;}
+    faceEnroll().then(()=>{toast('Face ID włączone');render();}).catch(e=>{toast(e&&e.name==='NotAllowedError'?'Anulowano':(e&&e.message)||'Nie udało się włączyć Face ID');});},
+  faceOff(){delete META.wFace;persist();toast('Face ID wyłączone');render();},
   chpin(){
     pwSheet('Zmień PIN','Dłuższy PIN jest trudniejszy do złamania, jeśli ktoś skopiuje dane z urządzenia. Zalecane 6–8 cyfr.',[['cur','OBECNY PIN',1],['p1','NOWY PIN',1],['p2','POWTÓRZ NOWY',1]],async v=>{
       if(!/^\d{4,8}$/.test(v.p1||''))return 'Nowy PIN: 4–8 cyfr';if(v.p1!==v.p2)return 'Nowe PIN-y się różnią';
       busy(true,'Sprawdzanie…');
-      try{await unseal(await derive(v.cur||'',unb64(META.salt),META.iter),BOX);}catch(e){busy(false);return 'Błędny obecny PIN';}
-      const salt=crypto.getRandomValues(new Uint8Array(16));KEY=await derive(v.p1,salt,ITER);META.salt=b64(salt);META.iter=ITER;await save();busy(false);closeSheet();toast('PIN zmieniony');
+      try{const kek=await derive(v.cur||'',unb64(META.salt),META.iter);if(META.wPin)await unseal(kek,META.wPin);else await unseal(kek,BOX);}catch(e){busy(false);return 'Błędny obecny PIN';}
+      if(!DKRAW){KEY=await newDK();}await wrapPin(v.p1);await save();busy(false);closeSheet();toast('PIN zmieniony');
     });
   },
   exp(){
@@ -1448,7 +1482,7 @@ document.addEventListener('visibilitychange',()=>{
 (async function init(){
   try{
     const v=await idb.get('vault');
-    if(v&&v.ct){META={salt:v.salt,iter:v.iter,fails:v.fails||0,wipe:v.wipe==null?10:v.wipe};BOX={iv:v.iv,ct:v.ct};mode='unlock';}
+    if(v&&v.ct){META={v:v.v||1,salt:v.salt,iter:v.iter,fails:v.fails||0,wipe:v.wipe==null?10:v.wipe,wPin:v.wPin,wFace:v.wFace};BOX={iv:v.iv,ct:v.ct};mode='unlock';}
     else mode='setup1';
   }catch(e){mode='setup1';}
   showLock();
