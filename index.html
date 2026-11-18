@@ -198,6 +198,10 @@ td.r,th.r{text-align:right}
 .wd.tod i{background:none;border:2px dashed #FF9F43;animation:pulse 1.6s ease-in-out infinite}
 .wd.tod span{color:var(--tx)}
 .wd.fut i{opacity:.3}
+.wd.rst i{background:linear-gradient(160deg,#5A5F7A,#3A3F5A)}
+.rlx{width:180px;height:180px;margin:18px auto;border-radius:50%;background:radial-gradient(circle,#7CC4F5 0%,#3B5BDB 70%);box-shadow:0 0 40px rgba(80,150,255,.5);transform:scale(.6);transition:transform 4s ease-in-out}
+.rlx.in{transform:scale(1)}.rlxt{text-align:center;font-size:15px;color:var(--tx2)}
+.qb{display:flex;gap:8px;margin-top:10px}.qb button{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 6px;font-size:13px}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .lvl{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tx2);margin-bottom:6px;gap:8px}
 .lvl b{color:var(--tx);font-size:13px}
@@ -412,7 +416,8 @@ function migrate(){
   S.settings=Object.assign({autolock:60,discreet:true,msgs:true},S.settings||{});
   S.goals=Object.assign({plugDaily:true,dPerWeek:1,bigPerWeek:1,rPerWeek:3},S.goals||{});
   S.seen=Object.assign({week:'',ms:''},S.seen||{});
-  S.plan=Object.assign({mode:'off',n:7,p:20},S.plan||{});S.fist=Object.assign({start:4,rest:48},S.fist||{});S.draws=S.draws||{};
+  S.plan=Object.assign({mode:'off',n:7,p:20},S.plan||{});S.fist=Object.assign({start:4,rest:48},S.fist||{});
+  S.streak=Object.assign({cats:['P','D','F','M','R','K','X'],restDows:[],quota:1,auto:true,days:{},buys:[]},S.streak||{});S.relax=Array.isArray(S.relax)?S.relax:[];S.draws=S.draws||{};
   if(!S.created){const t=[...S.sessions.map(x=>x.start),...S.events.map(x=>x.at)];S.created=t.length?Math.min(...t):Date.now();}
   if(S.msg&&!(S.msg.pools&&typeof S.msg.pools==='object'))S.msg=null;
 }
@@ -530,7 +535,7 @@ function tipOfDay(off=0){const T=allTips();if(!T.length)return null;const d=Math
 function tipCard(){const t=tipOfDay();if(!t)return '';return `<button class="tip" data-act="tips"><small><span>💡 Tip dnia · ${esc(t.cat)}</span><span>więcej ›</span></small><div class="${S.settings.discreet?'blur':''}">${esc(t.t)}</div></button>`;}
 function todayCard(g){
   const st=status(),G=S.goals,due=dueList(st);
-  if(g&&!g.todayDone&&g.streak>0&&new Date().getHours()>=18)due.unshift(['streak_risk',{seria:g.streak}]);
+  if(g&&!g.todayDone&&!g.todayRest&&g.streak>0&&new Date().getHours()>=18)due.unshift(['streak_risk',{seria:g.streak}]);
   const key=dayKey(Date.now())+'|'+due.map(d=>[].concat(d[0])[0]).join(',');
   if(headMsg.key!==key)headMsg={key,text:due.length?pick(due[0][0],{...due[0][1],dni:st.streak,seria:g?g.streak:0}):pick('all_done',{dni:st.streak})};
   const row=(ok,l,v)=>`<div class="ck"><span class="ckm${ok?' ok':''}">${ok?'✓':''}</span><span>${l}</span><em class="num">${v}</em></div>`;
@@ -543,6 +548,8 @@ function todayCard(g){
   if(G.rPerWeek)h+=row(st.r>=G.rPerWeek,`${alias('R')} w tym tygodniu`,`${st.r}/${G.rPerWeek}`);
   if(S.sessions.some(s=>s.cat==='F')){const F=fistState();h+=`<div class="ck"><span class="ckm${F.inRest?'':' ok'}">${F.inRest?'⏸':'✓'}</span><span>${alias('F')}: ${esc(fsName(F.un))} · awans ${F.cnt}/3</span><em class="num">${F.inRest?'przerwa do '+hm(F.restUntil):'gotowy'}</em></div>`;}
   h+=`<div class="ck"><span class="ckm ok">◎</span><span>bez ${alias('E')}</span><em class="num">${st.streak} d</em></div>`;
+  if(g&&!g.todayDone){const wk=weekStart(Date.now()),used=Object.keys(S.streak.days).filter(k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d).getTime()>=wk;}).length,canRest=!g.todayRest&&used<S.streak.quota;
+    h+=`<div class="qb">${S.streak.cats.includes('X')?'<button data-act="relax">🫁 3 min rozluźniania</button>':''}${canRest?`<button data-act="restday">💤 dziś odpoczywam (${S.streak.quota-used}/${S.streak.quota})</button>`:''}</div>`;}
   const ps=planState();
   if(ps.mode==='every')h+=`<div class="ck"><span class="ckm${ps.allowed?' ok':''}">${ps.allowed?'✓':'⏳'}</span><span>plan ${alias('E')}</span><em class="num">${ps.allowed?'dziś wolno':'za '+ps.left+' d'}</em></div>`;
   if(ps.mode==='dice')h+=`<div class="ck"><span class="ckm${ps.allowed?' ok':''}">🎲</span><span>plan ${alias('E')}</span>${ps.drawn?`<em>${ps.allowed?'dziś wolno':'dziś nie'}</em>`:'<button class="dice" data-act="draw">Losuj</button>'}</div>`;
@@ -806,15 +813,24 @@ function ladder(cat){
 function computeGame(now){if(now==null){if(_gc&&Date.now()-_gc.t<1500)return _gc.g;const g=computeGame0(Date.now());_gc={t:Date.now(),g};return g;}return computeGame0(now);}
 function computeGame0(now=Date.now()){
   const today=dayStart(now),tk=dayKey(today),done=new Set(),log=[];const add=(t,x,k)=>{if(x)log.push([t,x,k]);};
-  const act=S.sessions.filter(s=>s.cat==='P'||s.cat==='D'||s.cat==='F');
+  const SC=S.streak.cats,MAXF=3,act=S.sessions.filter(s=>SC.includes(s.cat));
+  const heavy=new Set();for(const s of S.sessions)if(s.end&&((s.cat==='P'&&isBig(s))||(s.cat==='F'&&(s.stage||0)>=4)))heavy.add(dayKey(s.end));
+  const isRest=d=>{const k=dayKey(d);return S.streak.restDows.includes((new Date(d).getDay()+6)%7)||!!S.streak.days[k]||(S.streak.auto&&heavy.has(dayKey(addDays(d,-1))));};
+  const relaxDone=new Set();if(SC.includes('X'))for(const x of S.relax)if((x.min||0)>=3)relaxDone.add(dayKey(x.at));
   for(const s of act){let d=dayStart(s.start);const end=Math.min(s.end||now,now);while(d<=end){done.add(dayKey(d));d=addDays(d,1);}}
-  let streak=0,best=0,freezes=0,used=0,run=0;const hist={};
-  if(act.length){let d=dayStart(Math.min(...act.map(s=>s.start)));
-    while(d<today){const k=dayKey(d);
-      if(done.has(k)){streak++;run++;hist[k]='done';if(run%7===0&&freezes<2)freezes++;if(STREAK_MS.includes(streak))add(d,streak*10,'streak');}
+  for(const k of relaxDone)done.add(k);
+  let streak=0,best=0,freezes=0,used=0,run=0;const hist={},buys=[...S.streak.buys].sort((a,b)=>a-b);let bi=0;
+  const starts=[...act.map(s=>s.start),...S.relax.filter(x=>SC.includes('X')&&(x.min||0)>=3).map(x=>x.at)];
+  if(starts.length){let d=dayStart(Math.min(...starts));
+    while(d<today){const k=dayKey(d);while(bi<buys.length&&dayStart(buys[bi])<=d){if(freezes<MAXF)freezes++;bi++;}
+      if(done.has(k)){streak++;run++;hist[k]='done';if(run%7===0&&freezes<MAXF)freezes++;if(STREAK_MS.includes(streak))add(d,streak*10,'streak');}
+      else if(isRest(d)&&streak>0){hist[k]='rest';}
       else if(freezes>0&&streak>0){freezes--;used++;hist[k]='frozen';}
       else{streak=0;run=0;hist[k]='miss';}
       best=Math.max(best,streak);d=addDays(d,1);}}
+  while(bi<buys.length){if(freezes<MAXF)freezes++;bi++;}
+  const todayRest=isRest(today);if(todayRest&&!done.has(tk))hist[tk]='rest';
+  for(const x of S.relax)if((x.min||0)>=3)add(x.at,10,'relax');
   const todayDone=done.has(tk);if(todayDone){streak++;hist[tk]='done';if(STREAK_MS.includes(streak))add(today,streak*10,'streak');}best=Math.max(best,streak);
   const FS=fistState(now);let ao=0,big=0,dn=0,pH=0,r=0,targets=0,fN=0,fWarm=0,edges=0,kN=0,kH=0,kMax=0;
   for(const [t] of FS.promos)add(t,150,'promo');for(const t of FS.restList)add(t,20,'rest');
@@ -873,8 +889,8 @@ function computeGame0(now=Date.now()){
         days.push({d,ok:pr.done,td:ds===today,lab:CH[id].lab(c),v:pr.v,t:pr.t,u:pr.u});}
       if(n>=20){advWins++;add(new Date(y,11,24,23).getTime(),300,'event');}
       if(y===ny&&nm===11)season={type:'adv',days,n};}}
-  const xp=Math.round(log.reduce((a,x)=>a+x[1],0));let Lv=1;while(lvlReq(Lv+1)<=xp)Lv++;
-  return{xp,level:Lv,from:lvlReq(Lv),to:lvlReq(Lv+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw,
+  const xp=Math.round(log.reduce((a,x)=>a+x[1],0)),spent=S.streak.buys.length*300;let Lv=1;while(lvlReq(Lv+1)<=xp)Lv++;
+  return{xp,spendable:xp-spent,todayRest,maxF:MAXF,level:Lv,from:lvlReq(Lv),to:lvlReq(Lv+1),streak,best,todayDone,freezes,used,hist,ao,big,d:dn,pHours:pH,r,e:E.length,bestNoE:Math.floor(bestNoE),perfectWeeks:pw,
     nights:nights.size,nightSet:nights,sw,ePlan,chDone,todayCh,targets,log,mDone,trophies,trophyList,curMonth,nnnWins,advWins,season,evWon,hf,ruin,milk,plugN,plugNight,plugMax,cer,swBest,toyX,eDayMax,eRun,mN,mCtrl,unlocked,sk3,sk4,kN,kH,kMax,FS,fN,fWarm,edges,mastered};
 }
 function xpBetween(g,a,b){return Math.round(g.log.filter(x=>x[0]>=a&&x[0]<b).reduce((s,x)=>s+x[1],0));}
@@ -931,12 +947,12 @@ function animateXP(g){const el=$('#xpnum'),bar=$('#xpbarh');if(!el||!bar)return;
 function heroCard(g){
   const ws=weekStart(Date.now()),tk=dayKey(Date.now()),DD=['pn','wt','śr','cz','pt','sb','nd'];let dots='';
   for(let i=0;i<7;i++){const d=addDays(ws,i),k=dayKey(d),st=g.hist[k];
-    const c=st==='done'?'done':st==='frozen'?'frz':st==='miss'?'miss':k===tk?'tod':d>Date.now()?'fut':'';
-    dots+=`<div class="wd ${c}"><i>${st==='done'?'✓':st==='frozen'?'❄':''}</i><span>${DD[i]}</span></div>`;}
+    const c=st==='done'?'done':st==='frozen'?'frz':st==='rest'?'rst':st==='miss'?'miss':k===tk?'tod':d>Date.now()?'fut':'';
+    dots+=`<div class="wd ${c}"><i>${st==='done'?'✓':st==='frozen'?'❄':st==='rest'?'💤':''}</i><span>${DD[i]}</span></div>`;}
   const pct=Math.min(100,(g.xp-g.from)/(g.to-g.from)*100),nm=levelName(g.level);
   const dz=g.streak===1?'dzień':'dni';
   return `<button class="hero${g.todayDone?'':' cold'}" data-act="profile"><div class="hrow"><div class="flame${g.todayDone?' on':''} t${ftier(g.streak)}">${g.todayDone?FLAME:FLAME_OFF}${g.todayDone&&ftier(g.streak)===3?[[-12,0],[10,.5],[0,1.1],[16,.8]].map(([dx,dl])=>`<span class="spk" style="left:${30+dx/2}px;top:24px;--dx:${dx}px;animation-delay:${dl}s"></span>`).join(''):''}<b class="num">${g.streak}</b></div>
-    <div><div class="hs">${g.streak} ${dz} serii</div><div class="hsub"><span>${g.todayDone?'🔥 dziś zaliczone':'dziś jeszcze nie'}</span><span class="ice">❄ ${g.freezes}/2</span><span class="ftier t${ftier(g.streak)}">${FT[ftier(g.streak)][0]}</span><span>rekord ${g.best}</span></div></div></div>
+    <div><div class="hs">${g.streak} ${dz} serii</div><div class="hsub"><span>${g.todayDone?'🔥 dziś zaliczone':g.todayRest?'💤 dzień regeneracji':'dziś jeszcze nie'}</span><span class="ice">❄ ${g.freezes}/${g.maxF}</span><span class="ftier t${ftier(g.streak)}">${FT[ftier(g.streak)][0]}</span><span>rekord ${g.best}</span></div></div></div>
     <div class="week">${dots}</div>
     <div class="lvl"><span><span class="lvlc">${g.level}</span><b>${nm?esc(nm):'Poziom '+g.level}</b></span><span class="num" id="xpnum">${g.xp-g.from} / ${g.to-g.from} XP</span></div>
     <div class="xpbar"><i id="xpbarh" style="width:${pct}%"></i></div></button>`;
@@ -1086,7 +1102,8 @@ function renderHist(){
   const [yy,mm,dd]=hist.day.split('-').map(Number),sd=new Date(yy,mm-1,dd);
   const sel=ents.filter(e=>dayKey(e.t)===hist.day);
   h+=`<div class="sec rowsec"><span>${DN[sd.getDay()]} ${dd} ${MN[mm-1]}</span><button class="add" data-act="addEntry">+ Dodaj</button></div>`;
-  h+=sel.length?sel.map(e=>entryLine(e,hm)).join(''):'<div class="empty">Brak wpisów</div>';
+  const rx=S.relax.filter(x=>dayKey(x.at)===hist.day);
+  h+=sel.length||rx.length?sel.map(e=>entryLine(e,hm)).join('')+rx.map(x=>`<div class="li"><span class="sym s" style="background:#3B5BDB">🫁</span><span>rozluźnianie · ${fnum(x.min,1).replace(',0','')} min</span><em class="num">${hm(x.at)}</em></div>`).join('')+(S.streak.days[hist.day]?'<div class="li"><span class="sym s" style="background:#3A3F5A">💤</span><span>dzień regeneracji</span><em></em></div>':''):'<div class="empty">Brak wpisów</div>';
   $('#view').innerHTML=h;
 }
 
@@ -1236,6 +1253,11 @@ function renderSet(){
   const cnt=S.msg?Object.values(S.msg.pools).reduce((a,p)=>a+(Array.isArray(p)?p.length:0),0):0;
   const lvNow=computeGame().level;
   h+=`<div class="sec">Motyw</div><div class="thm">${THEMES.map(([id,nm,lv,c])=>{const lock=lvNow<lv;return `<button data-act="theme" data-v="${id}" class="${(S.settings.theme||'grafit')===id?'on':''}"${lock?' disabled':''} style="background:${c[0]}"><div class="sw">${c.map(x=>`<i style="background:${x}"></i>`).join('')}</div>${nm}${lock?` · 🔒 poz. ${lv}`:''}</button>`;}).join('')}</div>`;
+  {const SC=S.streak.cats,DD=['pn','wt','śr','cz','pt','sb','nd'];
+   h+=`<div class="sec">Seria</div><div class="card"><span class="f" style="margin-top:0">CO ZALICZA DZIEŃ</span><div class="chips">${CATS.filter(c=>c!=='E'&&catOn(c)).concat(['X']).map(c=>`<button class="chip${SC.includes(c)?' on':''}" data-act="scat" data-v="${c}">${c==='X'?'🫁 rozluźnianie':esc(alias(c))}</button>`).join('')}</div>
+   <span class="f">STAŁE DNI REGENERACJI (maks. 2)</span><div class="chips">${DD.map((d,i)=>`<button class="chip${S.streak.restDows.includes(i)?' on':''}" data-act="sdow" data-v="${i}">${d}</button>`).join('')}</div>
+   <div class="setrow" style="margin-top:10px"><label class="grow">dodatkowe 💤 na tydzień<select data-set="s_quota">${[0,1,2].map(n=>`<option value="${n}"${S.streak.quota===n?' selected':''}>${n}</option>`).join('')}</select></label><label class="grow">💤 po dużym treningu<select data-set="s_auto"><option value="1"${S.streak.auto?' selected':''}>tak</option><option value="0"${S.streak.auto?'':' selected'}>nie</option></select></label></div>
+   <div class="info">Duży trening = korek oznaczony jako trening tygodniowy albo ${alias('F')} od etapu 4. Następny dzień jest wtedy automatycznie dniem regeneracji.</div></div>`;}
   h+=`<div class="sec">Cele</div><div class="card">
    <div class="setrow"><label class="grow">${alias('P')} codziennie${yn('g_plug',G.plugDaily)}</label><label class="grow">${alias('D')} / tydzień${nIn('g_d',G.dPerWeek)}</label></div>
    <div class="setrow"><label class="grow">trening (duży) / tydz.${nIn('g_big',G.bigPerWeek)}</label><label class="grow">${alias('R')} / tydzień${nIn('g_r',G.rPerWeek)}</label></div>
@@ -1254,7 +1276,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v20.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v21.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1422,15 +1444,16 @@ const ACT={
     const K2=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
     openSheet(()=>`<div class="grab"></div><h3><span class="lvlc">${g.level}</span>${nm?esc(nm):'Poziom '+g.level}</h3><p class="sub2 num">${g.xp} XP łącznie · do poziomu ${g.level+1}: ${g.to-g.xp} XP</p>
       <div class="xpbar" style="margin:10px 0 14px"><i style="width:${(g.xp-g.from)/(g.to-g.from)*100}%"></i></div>
-      <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / 2')}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2(esc(L('ao'))+' łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}${K2('noce z '+alias('P'),g.nights)}${K2('wyzwania dnia',g.chDone)}</div>
+      <div class="kpis">${K2('seria',g.streak+' d')}${K2('rekord serii',g.best+' d')}${K2('zamrożenia',g.freezes+' / '+g.maxF)}${K2('XP do wydania',g.spendable)}${K2('najdłużej bez '+alias('E'),g.bestNoE+' d')}${K2(esc(L('ao'))+' łącznie',g.ao)}${K2('idealne tygodnie',g.perfectWeeks)}${K2('noce z '+alias('P'),g.nights)}${K2('wyzwania dnia',g.chDone)}</div>
       ${(()=>{const ws=weekStart(Date.now());let bw=0;for(let w=weekStart(S.created);w<ws;w=addDays(w,7))bw=Math.max(bw,xpBetween(g,w,addDays(w,7)));const tw=xpBetween(g,ws,addDays(ws,7)),mx=Math.max(bw,tw,1);
         return `<div class="wkcmp"><b>Ten tydzień vs rekord</b><div class="row"><span>ten tydzień</span><span class="num">${tw} XP</span></div><div class="xpbar"><i style="width:${tw/mx*100}%"></i></div><div class="row"><span>rekordowy tydzień</span><span class="num">${bw} XP</span></div><div class="xpbar"><i style="width:${bw/mx*100}%;background:#5A5A60"></i></div>${tw>bw&&bw?'<div style="margin-top:8px;color:#FFB35C">🔥 Bijesz rekord!</div>':bw?`<div style="margin-top:8px;color:var(--tx2)">Do rekordu: ${bw-tw} XP</div>`:''}</div>`;})()}
       <span class="f">TROFEA MIESIĘCY ${g.trophies}</span><div class="shelf">${g.trophyList.length?g.trophyList.map(([y,m])=>`<div>${icon('cel_trophy')?`<span class="bi">${icon('cel_trophy')}</span>`:'<i>🏆</i>'}${MNOM[m].slice(0,3)} ${y}</div>`).join(''):'<div style="padding:10px">Jeszcze brak — zrób komplet wyzwań miesiąca</div>'}</div>
       <div class="row2" style="margin-top:10px"><button class="setbtn" style="margin:0;flex:1;margin-right:6px" data-x="rep">📊 Raport: poprzedni miesiąc</button><button class="setbtn" style="margin:0;flex:1" data-x="repn">Ten miesiąc</button></div>
       <span class="f">ODZNAKI ${un.size} / ${BADGES.length}</span><div class="badges">${BADGES.map(b=>`<div class="bdg${un.has(b[0])?' on':''}">${icon('b_'+b[0])?`<span class="bi">${icon('b_'+b[0])}</span>`:`<i>${b[1]}</i>`}<b>${esc(badgeName(b))}</b><small>${esc(b[3])}</small></div>`).join('')}</div>
-      <span class="f">JAK DZIAŁA SERIA</span><div class="xpt">Płomień: pomarańczowy → od 30 dni niebieski → od 100 fioletowy → od 365 złoty z iskrami${ftier(g.streak)<3?` (następny za ${[30,100,365][ftier(g.streak)]-g.streak} d)`:''}. Dzień jest zaliczony, gdy był ${alias('P')} (dowolny) albo ${alias('D')}. Za każde 7 zaliczonych dni z rzędu dostajesz zamrożenie (maks. 2) — ratuje serię, jeśli opuścisz dzień. ${alias('E')} nie przerywa serii.</div>
+      <button class="setbtn" data-x="buy" style="margin-top:10px"${g.freezes>=g.maxF||g.spendable<300?' disabled style="opacity:.5;margin-top:10px"':''}>❄ Kup zamrożenie za 300 XP</button>
+      <span class="f">JAK DZIAŁA SERIA</span><div class="xpt">Płomień: pomarańczowy → od 30 dni niebieski → od 100 fioletowy → od 365 złoty z iskrami${ftier(g.streak)<3?` (następny za ${[30,100,365][ftier(g.streak)]-g.streak} d)`:''}. Dzień zalicza dowolna aktywność z listy w Ustawieniach → Seria (domyślnie wszystkie kategorie i 3 min rozluźniania). Dni regeneracji 💤 (stałe, ręczne z limitu i automatyczne po dużym treningu) nie przerywają serii. Za każde 7 zaliczonych dni z rzędu dostajesz zamrożenie, możesz też je kupić za 300 XP (maks. 3). XP wydane w sklepie nie obniżają poziomu. ${alias('E')} nie przerywa serii.</div>
       <span class="f">PUNKTY XP</span><div class="xpt">${alias('P')}: 10 + 2/h (do 16) · duży: 40 + 5/30 min (do 20) · ${alias('D')}: 30 · ${esc(L('ao'))}: +50 · ${alias('R')}: 10 + do 10 · ${alias('E')}: 25 (w planie 50, poza planem 10) · ${esc(L('sw'))}: +20 · noc z ${alias('P')} (2–5): +30 · cel sesji: 15 + 1/10 min · ${alias('F')}: 40 + 10/etap, rozgrzewka +15, rękawiczka +5, komfort 4+ +10, awans +150 · ${esc(L('edge'))}: 5 (do 50/sesję) · opanowany rozmiar: +100 · wyzwania dnia: 30–70 (weekend ×2) · wyzwania miesiąca: 200–400, komplet +300 · idealny tydzień: 100 · seria 7/14/30/50/100…: dni×10 · dni bez ${alias('E')} (3…365): dni×5</div>
-      <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,x=>{if(x==='rep')ACT.report();else if(x==='repn')ACT.reportNow();else closeSheet();});},
+      <button class="save" data-x="ok" style="margin-top:16px">Zamknij</button>`,x=>{if(x==='rep')ACT.report();else if(x==='repn')ACT.reportNow();else if(x==='buy')ACT.buyFreeze();else closeSheet();});},
   impMsg(){$('#impm').value='';$('#impm').click();},
   defMsg(){S.msg=null;headMsg.key='';save();render();toast('Przywrócono domyślne');},
   pause(d){const s=S.sessions.find(x=>x.id===d.id);if(!s||s.pauseAt)return;s.pauseAt=Date.now();save();render();},
@@ -1468,6 +1491,23 @@ const ACT={
   editItem(d){openItem(d.id);},
   lock(){lock();},
   face(){faceUnlock();},
+  scat(d){const a=S.streak.cats,i=a.indexOf(d.v);if(i>=0){if(a.length>1)a.splice(i,1);}else a.push(d.v);save();render();},
+  sdow(d){const a=S.streak.restDows,v=+d.v,i=a.indexOf(v);if(i>=0)a.splice(i,1);else{if(a.length>=2){toast('Maksymalnie 2 stałe dni');return;}a.push(v);}save();render();},
+  restday(){const k=dayKey(Date.now());S.streak.days[k]=true;headMsg.key='';save();render();toast('💤 Dzień regeneracji — seria bezpieczna');},
+  relax(){let mins=3,t0=null,iv=null,ph=0;
+    const stop=()=>{clearInterval(iv);iv=null;};
+    const finish=()=>{stop();const el=t0?(Date.now()-t0)/6e4:0;closeSheet();if(el>=3){S.relax.push({id:uid(),at:t0,min:Math.round(el*10)/10});save();toast('🫁 Zapisano · +10 XP');celebrate();}else{render();if(t0)toast('Za krótko — minimum 3 min');}};
+    openSheet(()=>`<div class="grab"></div><h3>🫁 Rozluźnianie dna miednicy</h3><p class="sub2">Wdech 4 s — brzuch i dno miednicy się rozluźniają, „opadają”. Wydech 6 s — spokojnie, bez zaciskania. Minimum 3 min zalicza dzień.</p>
+      <div class="chips" style="margin-top:10px">${[3,5,10].map(m=>`<button class="chip${mins===m?' on':''}" data-x="m" data-v="${m}">${m} min</button>`).join('')}</div>
+      <div class="rlx" id="rlx"></div><div class="rlxt" id="rlxt">gotowy?</div><div class="rlxt num" id="rlxc" style="font-size:22px;color:var(--tx);margin-top:6px">${pad2(mins)}:00</div>
+      <button class="save" data-x="go">${t0?'Zakończ':'Start'}</button><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
+    (x,v,redraw)=>{if(x==='m'&&!t0){mins=+v;redraw();return;}
+      if(x==='close'){stop();closeSheet();render();return;}
+      if(x==='go'){if(t0){finish();return;}t0=Date.now();redraw();const tick=()=>{const el=(Date.now()-t0)/1000,left=Math.max(0,mins*60-el),c=el%10,r=$('#rlx'),tx=$('#rlxt'),cc=$('#rlxc');if(!r){stop();return;}
+          const inh=c<4;r.classList.toggle('in',inh);r.style.transition=`transform ${inh?4:6}s ease-in-out`;tx.textContent=inh?'wdech — rozluźnij':'wydech — spokojnie';cc.textContent=pad2(Math.floor(left/60))+':'+pad2(Math.floor(left%60));if(left<=0)finish();};
+        tick();iv=setInterval(tick,250);}});},
+  buyFreeze(){const g=computeGame();if(g.freezes>=g.maxF){toast('Masz już maksimum zamrożeń');return;}if(g.spendable<300){toast('Za mało XP do wydania');return;}
+    S.streak.buys.push(Date.now());save();closeSheet();toast('❄ Kupiono zamrożenie (−300 XP do wydania)');render();},
   faceOn(){if(!faceOK()){toast('Ta przeglądarka nie obsługuje Face ID dla stron');return;}
     if(!DKRAW){toast('Zablokuj i odblokuj PIN-em, potem spróbuj ponownie');return;}
     faceEnroll().then(()=>{toast('Face ID włączone');render();}).catch(e=>{toast(e&&e.name==='NotAllowedError'?'Anulowano':(e&&e.message)||'Nie udało się włączyć Face ID');});},
@@ -1552,6 +1592,8 @@ $('#view').addEventListener('change',ev=>{
   else if(s==='gfx')S.settings.gfx=el.value==='1';
   else if(s==='fx')S.settings.fx=el.value==='1';
   else if(s==='pl_mode')S.plan.mode=el.value;
+  else if(s==='s_quota')S.streak.quota=+el.value;
+  else if(s==='s_auto')S.streak.auto=el.value==='1';
   else if(s==='f_start')S.fist.start=+el.value;
   else if(s==='f_rest')S.fist.rest=+el.value;
   else if(s==='pl_n')S.plan.n=Math.max(1,Math.min(90,parseInt(el.value,10)||7));
