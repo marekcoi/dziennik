@@ -130,6 +130,8 @@ td.r,th.r{text-align:right}
 .link.danger{color:var(--warn)}
 .big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .today{background:linear-gradient(160deg,#2C2440,var(--card) 60%);border:1px solid #45386A;border-radius:18px;padding:14px;margin-bottom:12px}
+.efr{padding:8px 0;border-bottom:1px solid var(--line,#333)}.efr:last-of-type{border-bottom:0}.efr .t{display:flex;justify-content:space-between;gap:8px;font-size:14px}.efr .t span{color:var(--tx3);font-size:12px}.efd{display:flex;gap:4px;margin:5px 0}.efd i{flex:1;height:5px;border-radius:3px;background:var(--line,#333)}.efd i.on{background:var(--acc,#E0567A)}
+.msg.m2{font-size:14px;color:var(--tx2);border-left:3px solid var(--acc,#E0567A);padding-left:9px}.msg.m2 small{display:block;font-size:11px;color:var(--tx3);margin-bottom:2px}
 .msg{font-size:15px;line-height:1.45;margin-bottom:10px;white-space:pre-line;text-align:left;width:100%;display:block}
 .blur{filter:blur(7px);-webkit-user-select:none;user-select:none}
 .ck{display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--line)}
@@ -496,14 +498,17 @@ const DEFMSG={pools:{
   week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.'],
   challenge:['Wyzwanie zaliczone.'],ejac_ruined:['Zapisano.'],ctrl_done:['Kontrola zaliczona.'],record:['Nowy rekord.'],unlock:['Zakup odblokowany: {nazwa}.'],skill_3:['Rozmiar swobodny.'],skill_4:['Rozmiar za mały.'],event_done:['Event zaliczony.'],fist_up:['Awans: {etap}.'],ladder_up:['Nowy rozmiar opanowany.'],advent:['Okienko otwarte.'],month_done:['Wyzwanie miesiąca zaliczone.'],trophy:['Trofeum miesiąca zdobyte.'],night:['Noc zapisana. Razem: {n}.'],draw_yes:['Wylosowano: dziś wolno.'],draw_no:['Wylosowano: dziś nie.'],ejac_plan:['Zgodnie z planem.'],ejac_off:['Poza planem — zapisane.'],
   streak_ext:['Seria: {seria} dni.'],streak_risk:['Seria {seria} dni czeka na dzisiejszy wpis.'],streak_freeze_used:['Zamrożenie uratowało serię.'],
-  level_up:['Poziom {poziom}.'],badge:['Nowa odznaka: {nazwa}.']
+  level_up:['Poziom {poziom}.'],fist_done:['Sesja zapisana.'],pr_hi:['Powyżej Twojej średniej: +{proc}%.'],pr_goal:['Cel zaliczony: {cel}.'],pr_new:['Nowy rozmiar: {rozmiar}.'],pr_edge:['{edg}× kontrola. Dobrze.'],
+  ct_back:['{dni} dni przerwy: {kat}.'],ct_lad:['{rozmiar} → {poziom}: brakuje {brak}.'],ct_ef:['{kat}: do kolejnego etapu brakuje: {sesje}.'],ct_up:['{kat}: +{proc}% dłużej niż miesiąc temu.'],ct_keep:['Seria: {seria} dni.'],badge:['Nowa odznaka: {nazwa}.']
 }};
 const MILESTONES=[3,5,7,10,14,21,30,45,60,90,120,180,270,365];
 const lastPick={},tgtSeen=new Set(),recSeen=new Set();let headMsg={key:'',text:''};
 function poolOf(names){names=[].concat(names);
   if(S.settings.msgs&&S.msg)for(const n of names){const p=S.msg.pools[n];if(Array.isArray(p)&&p.length)return [n,p];}
   for(const n of names){const p=DEFMSG.pools[n];if(p&&p.length)return [n,p];}return [null,[]];}
-function pick(names,vars={}){const [n,p]=poolOf(names);if(!p.length)return '';let i=Math.floor(Math.random()*p.length);if(p.length>1&&i===lastPick[n])i=(i+1)%p.length;lastPick[n]=i;
+function pick(names,vars={}){const [n,p]=poolOf(names);if(!p.length)return '';const lp=(S.seen.lp=S.seen.lp||{}),rec=(lp[n]=Array.isArray(lp[n])?lp[n]:[]),keep=Math.min(10,p.length-1);
+  const free=[...p.keys()].filter(i=>!rec.slice(-keep).includes(i)),pool2=free.length?free:[...p.keys()];let i=pool2[Math.floor(Math.random()*pool2.length)];
+  rec.push(i);if(rec.length>12)rec.splice(0,rec.length-12);lastPick[n]=i;
   return String(p[i]).replace(/\{(\w+)\}/g,(m,k)=>vars[k]!=null?vars[k]:m);}
 function dayStart(ts){const d=new Date(ts);d.setHours(0,0,0,0);return d.getTime();}
 function weekStart(ts){const d=new Date(dayStart(ts));d.setDate(d.getDate()-(d.getDay()+6)%7);return d.getTime();}
@@ -542,6 +547,7 @@ function todayCard(g){
   const bigName=esc((S.items.find(i=>i.big)||{}).alias||'trening');
   let h='<div class="today">';
   if(S.settings.msgs&&headMsg.text)h+=`<button class="msg${S.settings.discreet?' blur':''}" data-act="reveal">${esc(headMsg.text)}</button>`;
+  const cm=S.settings.msgs?contMsg():null;if(cm&&cm.text)h+=`<button class="msg m2${S.settings.discreet?' blur':''}" data-act="reveal"><small>🔥 ${esc(cm.tag)}</small>${esc(cm.text)}</button>`;
   if(G.plugDaily)h+=row(st.plugToday,`${alias('P')} dziś`,st.plugToday?'jest':'—');
   if(G.dPerWeek)h+=row(st.d>=G.dPerWeek,`${alias('D')} w tym tygodniu`,`${st.d}/${G.dPerWeek}`);
   if(G.bigPerWeek)h+=row(st.big>=G.bigPerWeek,`${bigName} w tym tygodniu`,`${st.big}/${G.bigPerWeek}`);
@@ -583,6 +589,7 @@ function checks(){
   const mkM=new Date().getFullYear()+'-'+new Date().getMonth();if(S.seen.month&&S.seen.month!==mkM){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);S.seen.month=mkM;save();return reportOpen(d,q);}S.seen.month=mkM;
   const ms=MILESTONES.filter(m=>st.streak>=m).pop()||0,mk=(st.lastE||S.created)+':'+ms;
   if(ms&&S.seen.ms!==mk){q.push([pick(['streak_'+ms,'streak'],{dni:st.streak}),null]);S.seen.ms=mk;}
+  for(const e of efDue())q.push(e);
   save();
   const run=()=>{const t=q.shift();if(t)showMsg(t[0],{sub:t[1],then:run});else celebrate();};run();
 }
@@ -637,13 +644,81 @@ function startEjac(extra){const prev=status().streak,ps=planState();const e=Obje
   ejacCeleb(e,prev,()=>openEntry('e',e.id,{finish:true}));}
 function afterFinish2(s){
   if(s.goal&&goalDone(s))toast(`🎯 Cel zaliczony: ${goalLab(s.goal.t,s.goal.n)} · +${goalXPv(s.goal.t,s.goal.n)} XP`);
-  if(s.cat==='M'){if(s.res==='none'&&wearMs(s)>=20*6e4){quick('ctrl_done',{});}return celebrate();}
-  const then=()=>celebrate();
-  if(s.cat==='D'&&s.ao>0){if(gfxOn())confetti();fxWave();return showMsg(pick('ao',{n:s.ao,tydz:status().ao}),{then,icon:'cel_ao'});}
-  if(s.cat==='D')return showMsg(pick('dildo_done',{}),{then,icon:'cel_dildo'});
-  if(s.cat==='P'&&isBig(s)){fxJelly();}if(s.cat==='P'&&isBig(s))return showMsg(pick('big_done',{}),{then,icon:'cel_big'});
-  if(s.cat==='P'){quick('plug_done',{});return celebrate();}
-  quick('ring_done',{});celebrate();
+  const then=()=>effectsChain(efDue(),()=>celebrate());
+  if(s.cat==='M'&&s.res!=='none')return then();
+  const pr=praiseFor(s);if(!pr)return then();
+  const icn={D:'cel_dildo',G:'cel_big',AO:'cel_ao'}[pr.ic]||null;
+  if(pr.ic==='AO'){if(gfxOn())confetti();fxWave();}else if(pr.ic==='G')fxJelly();else if(pr.tier!=='ok'&&gfxOn())confetti();
+  if(pr.sheet)return showMsg(pr.text,{then,icon:icn,sub:pr.sub});
+  if(pr.text&&S.settings.msgs&&!S.settings.discreet)toast(pr.text);
+  then();
+}
+/* ---------- podziw · motywatory · efekty ---------- */
+const mfreq=()=>S.settings.mfreq||'all';
+const FALLB={D:'dildo_done',G:'big_done',P:'plug_done',R:'ring_done',M:'ctrl_done',F:'fist_done',K:'ring_done'};
+function kOf(s){return s.cat==='P'&&isBig(s)?'G':s.cat;}
+function sameK(k){return S.sessions.filter(x=>x.end&&kOf(x)===k);}
+function praiseFor(s){
+  const k=kOf(s),w=wearMs(s),prev=sameK(k).filter(x=>x.id!==s.id&&x.end<=s.end).slice(-10);
+  const avg=prev.length>=3?prev.reduce((a,x)=>a+wearMs(x),0)/prev.length:0,proc=avg?Math.round((w/avg-1)*100):0;
+  const it=S.items.find(i=>i.id===s.itemId),key=k==='D'?'len':'dia';
+  const v={min:Math.round(w/6e4),czas:dur(w),sred:avg?dur(avg):'',proc,rozmiar:it?it.alias:'',edg:s.edges||0,n:s.ao||0,tydz:status().ao,etap:s.cat==='F'?fsName(s.stage||0):'',seria:computeGame().streak||0,kat:k==='G'?((S.items.find(i=>i.big)||{}).alias||'trening'):alias(s.cat)};
+  let newSize=false;if(it&&it[key]){const used=S.sessions.filter(x=>x.id!==s.id&&x.end&&x.end<s.end&&x.itemId).map(x=>S.items.find(i=>i.id===x.itemId)).filter(i=>i&&i.cat===it.cat&&i[key]);newSize=used.length>0&&!used.some(i=>i.id===it.id)&&used.every(i=>i[key]<it[key]);}
+  let tier='ok',pools,ic=k;
+  if(s.cat==='D'&&s.ao>0){tier='top';pools=['pr_ao','ao'];ic='AO';}
+  else if(newSize){tier='top';pools=['pr_new_'+k.toLowerCase(),'pr_new'];}
+  else if(s.goal&&goalDone(s)){tier='hi';v.cel=goalLab(s.goal.t,s.goal.n);pools=['pr_goal_'+k.toLowerCase(),'pr_goal'];}
+  else if(proc>=20&&v.min>=5){tier='hi';pools=['pr_hi_'+k.toLowerCase(),'pr_hi'];}
+  else if((s.edges||0)>=5){tier='hi';pools=['pr_edge'];}
+  else pools=['pr_'+k.toLowerCase(),FALLB[k]];
+  const f=mfreq();if(tier==='ok'&&(f==='key'||(f==='some'&&Math.random()<.5)))return null;
+  const text=pick(pools,v);
+  let sub=`${v.czas}`+(avg?` · średnio ${v.sred}`+(proc>=5?` · <b>+${proc}%</b>`:''):'');
+  if(newSize)sub+=` · 🆕 ${esc(v.rozmiar)}`;if(v.edg)sub+=` · ${esc(L('edge'))} ×${v.edg}`;if(s.ao)sub+=` · ${esc(L('ao'))} ×${s.ao}`;
+  const sheet=tier!=='ok'||['D','G','F'].includes(k);
+  return{text,tier,sheet,sub,ic};
+}
+const EFK={P:[1,5,15,40],G:[1,4,10,25],D:[1,5,15,40],F:[1,5,15,30],M:[1,5,15,30],R:[1,5,15,40],A:[3,7,14,30,60]};
+function efLab(k){return k==='G'?((S.items.find(i=>i.big)||{}).alias||'trening'):k==='A'?`bez ${alias('E')}`:k==='M'?`${alias('M')} bez ${alias('E')}`:alias(k);}
+function efCount(k){if(k==='A')return status().streak;if(k==='M')return S.sessions.filter(x=>x.cat==='M'&&x.end&&x.res==='none').length;return sameK(k).length;}
+function efStage(k){const n=efCount(k),T=EFK[k];let st=0;T.forEach((t,i)=>{if(n>=t)st=i+1;});return{n,st,next:T[st]||null};}
+const plSes=n=>n===1?'sesja':(n%10>=2&&n%10<=4&&(n%100<12||n%100>14))?'sesje':'sesji';
+function efOn(k){return k==='A'||k==='G'?true:catOn(k);}
+function efDue(){const sn=S.seen,out=[];const init=sn.ef==null;sn.ef=sn.ef||{};
+  for(const k of Object.keys(EFK)){if(!efOn(k))continue;const {st}=efStage(k),was=sn.ef[k]||0;
+    if(init||k==='A'&&st<was){sn.ef[k]=st;continue;}
+    if(st>was){sn.ef[k]=st;const t=pick('ef_'+k.toLowerCase()+'_'+st,{kat:efLab(k)});if(t)out.push([t,`📈 ${esc(efLab(k))} · etap ${st}/${EFK[k].length}`]);}}
+  save();return mfreq()==='key'?out.slice(0,1):out;}
+function effectsChain(q,done){if(!S.settings.msgs||!q.length)return done();const t=q.shift();showMsg(t[0],{sub:t[1]+'<br><small>Typowy przebieg — u każdego tempo jest inne.</small>',icon:null,btn:'Dalej',then:()=>effectsChain(q,done)});}
+function efText(k,st){if(!S.msg||!S.settings.msgs)return '';const p=S.msg.pools['ef_'+k.toLowerCase()+'_'+st];return Array.isArray(p)&&p.length?p[0]:'';}
+function progressCard(){
+  const rows=Object.keys(EFK).filter(k=>efOn(k)&&(k==='A'||efCount(k)>0));if(!rows.length)return '';
+  let h=`<div class="sec">📈 Postępy i efekty</div><div class="card">`;
+  for(const k of rows){const e=efStage(k),T=EFK[k],u=k==='A'?'d':'';
+    h+=`<div class="efr"><div class="t"><b>${esc(efLab(k))}</b><span class="num">${e.n}${u?' '+u:''}${e.next?` · następny etap: ${e.next}${u?' '+u:''}`:' · komplet'}</span></div><div class="efd">${T.map((t,i)=>`<i class="${i<e.st?'on':''}"></i>`).join('')}</div>`;
+    const tx=e.st?efText(k,e.st):'';if(tx)h+=`<button class="msg${S.settings.discreet?' blur':''}" data-act="reveal" style="font-size:13px;margin:4px 0 0">${esc(tx)}</button>`;
+    if(e.next)h+=`<small style="color:var(--tx3)">🔒 etap ${e.st+1}: jeszcze ${e.next-e.n} ${k==='A'?'d':plSes(e.next-e.n)}</small>`;h+='</div>';}
+  return h+`<div class="info">Opisy to typowy przebieg, nie obietnica — tempo zależy od ciała, częstotliwości i rozluźnienia.</div></div>`;
+}
+function contMsg(){
+  const now=Date.now(),win=Math.floor(new Date().getHours()/6),f=mfreq(),C=[];
+  const last=k=>sameK(k).reduce((m,x)=>Math.max(m,x.end),0),days=t=>Math.floor((now-t)/864e5);
+  const act=new Set(S.sessions.filter(x=>!x.end).map(kOf));
+  const BK={D:5,G:9,F:10,R:6,P:2};
+  for(const [k,lim] of Object.entries(BK)){if(k!=='G'&&!catOn(k))continue;const t=last(k);if(!t||act.has(k))continue;const d=days(t);if(d>=lim)C.push([3,['ct_back_'+k.toLowerCase(),'ct_back'],{dni:d,kat:efLab(k)},`powrót · ${efLab(k)}`]);}
+  if(f!=='key'){
+    for(const c of ['P','D']){if(!catOn(c))continue;for(const l of ladder(c)){if(l.planned||!l.sk||l.sk.L<1||l.sk.L>3||!l.sk.req.length)continue;
+      const miss=l.sk.req.filter(r=>r[1]<r[2]);if(!miss.length)continue;const nm=['','opanowany','swobodny','za mały'][l.sk.L]||'';
+      C.push([2,'ct_lad',{rozmiar:l.i.alias,poziom:nm,brak:miss.map(r=>`${r[2]-r[1]}× ${r[0]}`).join(', ')},`drabinka · ${l.i.alias} → ${nm}`]);}}
+    for(const k of Object.keys(EFK)){if(k==='A'||!efOn(k))continue;const e=efStage(k);if(e.next&&e.n>0&&e.next-e.n<=2)C.push([2,'ct_ef',{kat:efLab(k),brak:e.next-e.n,sesje:(e.next-e.n)+' '+plSes(e.next-e.n)},`efekty · ${efLab(k)}`]);}
+    const dd=(a,b)=>sameK('D').filter(x=>x.end>=now-a*864e5&&x.end<now-b*864e5);const A=dd(30,0),B=dd(60,30);
+    if(A.length>=2&&B.length>=2){const av=x=>x.reduce((a,y)=>a+wearMs(y),0)/x.length,pr=Math.round((av(A)/av(B)-1)*100);if(pr>=15)C.push([2,'ct_up',{proc:pr,kat:alias('D')},`postęp · ${alias('D')}`]);}
+    const g=computeGame();if(g.streak>=3)C.push([2,'ct_keep',{seria:g.streak},`seria · ${g.streak} d`]);
+  }
+  if(!C.length)return null;
+  const key=dayKey(now)+'|'+win+'|'+C.map(c=>c[3]).join(',');if(contMsg.c&&contMsg.c.key===key)return contMsg.c;
+  const top=Math.max(...C.map(c=>c[0])),cand=C.filter(c=>c[0]>=top),c=cand[(new Date().getDate()*4+win)%cand.length];
+  const text=pick(c[1],c[2]);contMsg.c={key,text,tag:c[3]};return contMsg.c;
 }
 
 /* ---------- grywalizacja ---------- */
@@ -1211,7 +1286,7 @@ function renderStats(){
   const rated=LL.filter(x=>x.r),avgR=rated.length?rated.reduce((s,x)=>s+x.r,0)/rated.length:null;
   const cur=all.length?now-all[all.length-1].t:null;
   let longest=0;for(let i=1;i<LL.length;i++)longest=Math.max(longest,LL[i].t-LL[i-1].t);if(cur!=null&&n)longest=Math.max(longest,cur);
-  let h=`<div class="hdr"><b>Statystyki</b></div>`+recordsCard()+yearCal();
+  let h=`<div class="hdr"><b>Statystyki</b></div>`+recordsCard()+progressCard()+yearCal();
   h+=`<div class="seg">${CATS.filter(catOn).map(x=>`<button class="${x===c?'on':''}" data-act="sc" data-v="${x}" style="color:${S.cats[x].color}">${alias(x)}</button>`).join('')}</div>`;
   h+=`<div class="seg">${[[30,'30 dni'],[90,'90 dni'],[365,'rok'],[0,'całość']].map(([v,l])=>`<button class="${stat.range===v?'on':''}" data-act="sr" data-v="${v}">${l}</button>`).join('')}</div>`;
   const K=(l,v)=>`<div class="kpi"><small>${l}</small><b class="num">${v}</b></div>`;
@@ -1305,6 +1380,7 @@ function renderSet(){
    <div class="info">Przedmiot liczony jako trening tygodniowy oznaczasz w zakładce Przedmioty. 0 = cel wyłączony.</div></div>
   <div class="sec">Komunikaty</div><div class="card">
    <div class="setrow"><label class="grow">komunikaty${yn('msgs',S.settings.msgs)}</label><label class="grow">tryb dyskretny${yn('discreet',S.settings.discreet)}</label></div>
+   <div class="setrow"><label class="grow">pochwały i motywatory<select data-set="mfreq">${[['all','zawsze'],['some','czasem'],['key','tylko ważne']].map(([a,b])=>`<option value="${a}"${mfreq()===a?' selected':''}>${b}</option>`).join('')}</select></label><span class="grow info" style="margin:0">„tylko ważne” = rekordy, cele, nowe rozmiary, AO, powroty</span></div>
    <div class="setrow"><label class="grow">efekty specjalne${yn('fx',S.settings.fx===true)}</label><span class="grow info" style="margin:0">plusk, fala, galaretka, szron, gwiazdy</span></div>
    <div class="setrow"><label class="grow">grafiki z pakietu${yn('gfx',S.settings.gfx!==false)}</label><span class="grow info" style="margin:0">${S.msg&&S.msg.icons?Object.keys(S.msg.icons).length+' grafik':'brak grafik w pakiecie'}</span></div>
    <div class="info">Pakiet: ${S.msg?`własny (${cnt} tekstów)`:'domyślny, neutralny'}. Tryb dyskretny rozmywa teksty do momentu dotknięcia, wyłącza dymki z tekstami i ukrywa grafiki.</div></div>
@@ -1317,7 +1393,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v23.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v24.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1652,6 +1728,7 @@ $('#view').addEventListener('change',ev=>{
   else if(s==='discreet')S.settings.discreet=el.value==='1';
   else if(s==='gfx')S.settings.gfx=el.value==='1';
   else if(s==='fx')S.settings.fx=el.value==='1';
+  else if(s==='mfreq')S.settings.mfreq=['all','some','key'].includes(el.value)?el.value:'all';
   else if(s==='pl_mode')S.plan.mode=el.value;
   else if(s==='s_quota')S.streak.quota=+el.value;
   else if(s==='s_auto')S.streak.auto=el.value==='1';
