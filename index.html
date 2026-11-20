@@ -356,7 +356,9 @@ function cleanSvg(str){try{
   const walk=el=>{for(const ch of [...el.children]){if(!SVG_TAGS.has(ch.nodeName.toLowerCase())){ch.remove();continue;}walk(ch);}
     for(const a of [...el.attributes]){const n=a.name.toLowerCase(),v=a.value;if(!SVG_ATTR.test(n)||/javascript:|data:|url\(\s*['"]?(?!#)/i.test(v))el.removeAttribute(a.name);}};
   walk(root);return new XMLSerializer().serializeToString(root);}catch(e){return null;}}
-const LBL={m_hand:'ręka',m_toy:'zabawka',m_hf:'bez rąk',m_cage:'przez K',k_full:'pełny',k_ruined:'zrujnowany',k_milk:'dojenie',d_sw:'opcja S',d_toy:'na przedmiot',d_plug:'zatkane',d_body:'na ciało',d_other:'inne',sw_hand:'z ręki',sw_lick:'zlizane',sw_later:'później',ev_jan:'Styczeń z P',ev_feb:'Luty z D',ev_mar:'Marzec rozciągania',ev_apr:'Kwiecień nocy',ev_may:'Maj kontroli',ev_jun:'Czerwiec bez rąk',ev_jul:'Lipiec krawędzi',ev_aug:'Sierpień ręki',ev_sep:'Wrzesień szczebla',ev_oct:'Locktober',edge:'Edge',fs1:'Etap 1',fs2:'Etap 2',fs3:'Etap 3',fs4:'Etap 4',fs5:'Etap 5',fs6:'Etap 6',nnn:'Listopad bez E',ao:'AO',ao_long:'Wynik ★',sw:'S',sw_long:'Opcja S',night:'Noc'};
+const LBL={m_hand:'ręka',m_toy:'zabawka',m_hf:'bez rąk',m_cage:'przez K',k_full:'pełny',k_ruined:'zrujnowany',k_milk:'dojenie',d_sw:'opcja S',d_toy:'na przedmiot',d_plug:'zatkane',d_body:'na ciało',d_other:'inne',sw_hand:'z ręki',sw_lick:'zlizane',sw_later:'później',ev_jan:'Styczeń z P',ev_feb:'Luty z D',ev_mar:'Marzec rozciągania',ev_apr:'Kwiecień nocy',ev_may:'Maj kontroli',ev_jun:'Czerwiec bez rąk',ev_jul:'Lipiec krawędzi',ev_aug:'Sierpień ręki',ev_sep:'Wrzesień szczebla',ev_oct:'Locktober',edge:'Edge',fs1:'Etap 1',fs2:'Etap 2',fs3:'Etap 3',fs4:'Etap 4',fs5:'Etap 5',fs6:'Etap 6',nnn:'Listopad bez E',ao:'AO',ao_long:'Wynik ★',sw:'S',sw_long:'Opcja S',night:'Noc',da_lick:'ustami',da_ride:'na siedząco',da_nohand:'bez dotykania',da_deep:'do końca',da_inout:'całe wyjścia',da_gape:'otwarcie',fx_in:'z F w trakcie'};
+const DACTS=[['lick','👅',5],['ride','🐎',5],['nohand','🙌',10],['deep','⬇️',10],['inout','🔁',5],['gape','⭕',10]];
+const dActXP=s=>(s.acts||[]).reduce((a,k)=>a+((DACTS.find(d=>d[0]===k)||[])[2]||0),0);
 const L=k=>(S&&S.msg&&S.msg.labels&&S.msg.labels[k])||LBL[k]||k;
 const gfxOn=()=>!!(S&&S.settings.gfx!==false&&!S.settings.discreet&&S.msg&&S.msg.icons);
 const icon=n=>gfxOn()&&S.msg.icons[n]?S.msg.icons[n]:'';
@@ -477,7 +479,7 @@ function allEntries(){
 }
 function entryLine(en,tf){
   const o=en.o;let m;
-  if(en.k==='s'){m=o.end?dur(wearMs(o)):'trwa';if(o.pauses&&o.pauses.length)m+=' · ⏸'+o.pauses.length;const it=itemName(o.itemId);if(it)m+=' · '+esc(it);}
+  if(en.k==='s'){m=o.end?dur(wearMs(o)):'trwa';if(o.pauses&&o.pauses.length)m+=' · ⏸'+o.pauses.length;const it=(o.used&&o.used.length>1?o.used:[o.itemId]).map(itemName).filter(Boolean).join(' + ');if(it)m+=' · '+esc(it);if(o.acts&&o.acts.length)m+=' · '+o.acts.map(a=>(DACTS.find(d=>d[0]===a)||[])[1]||'').join('');if(S.sessions.some(z=>z.parent===o.id))m+=' · ✊';}
   else{m='Zdarzenie';if(o.tag)m+=' · '+esc(o.tag);if(o.sessionId){const s=S.sessions.find(x=>x.id===o.sessionId);if(s)m+=' · w '+alias(s.cat);}}
   if(en.k==='s'&&o.cat==='F'&&o.stage)m+=' · '+esc(fsName(o.stage));
   if(o.edges)m+=' · '+esc(L('edge'))+' ×'+o.edges;
@@ -498,7 +500,7 @@ const DEFMSG={pools:{
   week_good:['Tydzień: wszystkie cele zrobione.'],week_mixed:['Tydzień: część celów zrobiona.'],week_weak:['Tydzień: nowy start.'],
   challenge:['Wyzwanie zaliczone.'],ejac_ruined:['Zapisano.'],ctrl_done:['Kontrola zaliczona.'],record:['Nowy rekord.'],unlock:['Zakup odblokowany: {nazwa}.'],skill_3:['Rozmiar swobodny.'],skill_4:['Rozmiar za mały.'],event_done:['Event zaliczony.'],fist_up:['Awans: {etap}.'],ladder_up:['Nowy rozmiar opanowany.'],advent:['Okienko otwarte.'],month_done:['Wyzwanie miesiąca zaliczone.'],trophy:['Trofeum miesiąca zdobyte.'],night:['Noc zapisana. Razem: {n}.'],draw_yes:['Wylosowano: dziś wolno.'],draw_no:['Wylosowano: dziś nie.'],ejac_plan:['Zgodnie z planem.'],ejac_off:['Poza planem — zapisane.'],
   streak_ext:['Seria: {seria} dni.'],streak_risk:['Seria {seria} dni czeka na dzisiejszy wpis.'],streak_freeze_used:['Zamrożenie uratowało serię.'],
-  level_up:['Poziom {poziom}.'],fist_done:['Sesja zapisana.'],pr_hi:['Powyżej Twojej średniej: +{proc}%.'],pr_goal:['Cel zaliczony: {cel}.'],pr_new:['Nowy rozmiar: {rozmiar}.'],pr_edge:['{edg}× kontrola. Dobrze.'],
+  level_up:['Poziom {poziom}.'],fist_done:['Sesja zapisana.'],pr_hi:['Powyżej Twojej średniej: +{proc}%.'],pr_goal:['Cel zaliczony: {cel}.'],pr_new:['Nowy rozmiar: {rozmiar}.'],pr_edge:['{edg}× kontrola. Dobrze.'],pr_dfist:['Sesja z dwoma etapami.'],pr_dmulti:['Kilka rozmiarów w jednej sesji.'],pr_dlick:['Sesja zapisana.'],
   ct_back:['{dni} dni przerwy: {kat}.'],ct_lad:['{rozmiar} → {poziom}: brakuje {brak}.'],ct_ef:['{kat}: do kolejnego etapu brakuje: {sesje}.'],ct_up:['{kat}: +{proc}% dłużej niż miesiąc temu.'],ct_keep:['Seria: {seria} dni.'],badge:['Nowa odznaka: {nazwa}.']
 }};
 const MILESTONES=[3,5,7,10,14,21,30,45,60,90,120,180,270,365];
@@ -670,11 +672,14 @@ function praiseFor(s){
   else if(s.goal&&goalDone(s)){tier='hi';v.cel=goalLab(s.goal.t,s.goal.n);pools=['pr_goal_'+k.toLowerCase(),'pr_goal'];}
   else if(proc>=20&&v.min>=5){tier='hi';pools=['pr_hi_'+k.toLowerCase(),'pr_hi'];}
   else if((s.edges||0)>=5){tier='hi';pools=['pr_edge'];}
+  else if(s.cat==='D'&&S.sessions.some(z=>z.parent===s.id&&z.cat==='F')){tier='hi';pools=['pr_dfist','pr_d'];}
+  else if(s.cat==='D'&&(s.used||[]).length>1){tier='hi';v.ile=s.used.length;pools=['pr_dmulti','pr_d'];}
+  else if(s.cat==='D'&&(s.acts||[]).includes('lick')){pools=['pr_dlick','pr_d'];}
   else pools=['pr_'+k.toLowerCase(),FALLB[k]];
   const f=mfreq();if(tier==='ok'&&(f==='key'||(f==='some'&&Math.random()<.5)))return null;
   const text=pick(pools,v);
   let sub=`${v.czas}`+(avg?` · średnio ${v.sred}`+(proc>=5?` · <b>+${proc}%</b>`:''):'');
-  if(newSize)sub+=` · 🆕 ${esc(v.rozmiar)}`;if(v.edg)sub+=` · ${esc(L('edge'))} ×${v.edg}`;if(s.ao)sub+=` · ${esc(L('ao'))} ×${s.ao}`;
+  if(newSize)sub+=` · 🆕 ${esc(v.rozmiar)}`;if(v.edg)sub+=` · ${esc(L('edge'))} ×${v.edg}`;if(s.ao)sub+=` · ${esc(L('ao'))} ×${s.ao}`;if(s.used&&s.used.length>1)sub+=` · ${s.used.length} rozmiary`;if(s.acts&&s.acts.length)sub+=` · ${s.acts.map(a=>(DACTS.find(d=>d[0]===a)||[])[1]).join('')} +${dActXP(s)} XP`;{const lf=S.sessions.find(z=>z.parent===s.id&&z.cat==='F');if(lf)sub+=` · ✊ ${esc(fsName(lf.stage))}`;}
   const sheet=tier!=='ok'||['D','G','F'].includes(k);
   return{text,tier,sheet,sub,ic};
 }
@@ -952,7 +957,7 @@ function computeGame0(now=Date.now()){
   let mastered=0;const unlocked=[];let sk3=0,sk4=0;for(const c of ['P','D'])for(const l of ladder(c)){if(l.mAt){mastered++;add(l.mAt,100,'ladder');}if(l.sk&&l.sk.l3At){sk3++;add(l.sk.l3At,100,'skill');}if(l.sk&&l.sk.l4At){sk4++;add(l.sk.l4At,150,'skill');}if(l.planned&&l.unlocked&&l.gate)unlocked.push(l.i.id);}const nights=new Set();
   for(const s of S.sessions){const h=s.end?wearMs(s)/36e5:0;
     if(s.cat==='P'){if(isBig(s)){big++;add(s.start,XPV.Pbig+Math.min(20,Math.floor(h*2)*5),'P');}else add(s.start,XPV.P+Math.min(16,Math.floor(h)*2),'P');pH+=h;for(const n of nightsOf(s,now))nights.add(n);}
-    else if(s.cat==='D'){dn++;ao+=s.ao||0;add(s.start,XPV.D+(s.ao||0)*XPV.AO,'D');}
+    else if(s.cat==='D'){dn++;ao+=s.ao||0;add(s.start,XPV.D+(s.ao||0)*XPV.AO+dActXP(s),'D');}
     else if(s.cat==='F'&&s.end){fN++;const st=s.stage||0;if(s.warm)fWarm++;add(s.start,s._rest?10:40+st*10+(s.warm?15:0)+(s.glove?5:0)+((s.comfort||0)>=4?10:0),'F');}
     if(s.edges){edges+=s.edges;add(s.start,Math.min(50,s.edges*5),'edge');}
     else if(s.cat==='R'){r++;add(s.start,XPV.R+Math.min(10,Math.floor(h*4)),'R');}
@@ -1393,7 +1398,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v24.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v25.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1427,6 +1432,7 @@ function applyDest(ev){ev.sw=ev.dest==='sw'||(ev.dest==='toy'&&!!ev.lick);if(!ev
 function openEntry(k,id,opt={}){
   const isNew=!id,arr=k==='s'?S.sessions:S.events,o=isNew?opt.draft:arr.find(x=>x.id===id);if(!o)return;
   const w=JSON.parse(JSON.stringify(o));let delArm=false;
+  if(k==='s'&&w.cat==='D'){if(!Array.isArray(w.used))w.used=w.itemId?[w.itemId]:[];w.acts=Array.isArray(w.acts)?w.acts:[];const lf=!isNew&&S.sessions.find(z=>z.parent===w.id&&z.cat==='F');w.fx=lf?{on:true,stage:lf.stage,min:Math.max(1,Math.round(wearMs(lf)/6e4)),comfort:lf.comfort,warm:!!lf.warm,glove:!!lf.glove}:{on:false,min:15,stage:null,comfort:null};}
   if(k==='s'&&w.cat==='M'){const le=S.events.find(e=>e.sessionId===w.id&&e.kind!=='milk');w.ev=le?{method:le.method,inten:le.inten,amt:le.amt,ml:le.ml,dest:le.dest,swm:le.swm,destItem:le.destItem,lick:le.lick,plugSid:le.plugSid}:{method:'hand'};}
   const draw=()=>{
     let h='<div class="grab"></div>';
@@ -1436,7 +1442,8 @@ function openEntry(k,id,opt={}){
       h+=`<div class="two"><label><span class="f">START</span><input type="datetime-local" data-in="start" value="${toInput(w.start)}"></label><label><span class="f">KONIEC</span><input type="datetime-local" data-in="end" value="${w.end?toInput(w.end):''}"></label></div>`;
       h+=`<p class="sub2 num" id="durl">${w.end?dur(wearMs(w)):'trwa'}${w.pauses&&w.pauses.length?` · przerwy: ${w.pauses.length} (${dur(pauseTotal(w))}, nie wliczane)`:''}</p>`;
       const its=S.items.filter(i=>i.cat===w.cat&&!i.planned);
-      if(w.cat!=='F'&&w.cat!=='M')h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
+      if(w.cat==='D')h+=`<span class="f">UŻYTE ROZMIARY (możesz kilka)</span><div class="chips">${its.map(i=>`<button class="chip${w.used.includes(i.id)?' on':''}" data-x="dused" data-v="${i.id}">${w.itemId===i.id&&w.used.length>1?'★ ':''}${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>${w.used.length>1?`<p class="hint" style="margin-top:4px">★ największy — liczy się do drabinki, rekordów i komfortu.</p>`:''}`;
+      else if(w.cat!=='F'&&w.cat!=='M')h+=`<span class="f">PRZEDMIOT</span><div class="chips">${its.map(i=>`<button class="chip${w.itemId===i.id?' on':''}" data-x="item" data-v="${i.id}">${esc(i.alias)}</button>`).join('')||'<span class="hint">Dodaj w zakładce Przedmioty</span>'}</div>`;
       if(w.cat==='F'){const F=fistState();
         h+=`<span class="f">ETAP</span><div class="chips">${[1,2,3,4,5,6].map(n=>`<button class="chip${w.stage===n?' on':''}" data-x="stage" data-v="${n}">${esc(fsName(n))}${n>F.un?' 🔒':''}</button>`).join('')}</div>
           <p class="hint" style="margin-top:6px">Odblokowany: ${esc(fsName(F.un))} · awans po 3 sesjach na tym etapie z komfortem 4+ (${F.cnt}/3)${F.inRest&&isNew?` · trwa przerwa do ${hm(F.restUntil)} — sesja nie liczy się do awansu`:''}</p>
@@ -1446,6 +1453,13 @@ function openEntry(k,id,opt={}){
       if(w.cat!=='R'&&w.cat!=='M')h+=`<span class="f">KOMFORT</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${w.comfort===n?' on':''}" data-x="comfort" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(w.cat!=='P')h+=`<span class="f">${esc(L('edge')).toUpperCase()} (bez wytrysku)</span><div class="chips">${[0,1,2,3,4,5,6,8,10].map(n=>`<button class="chip${(w.edges||0)===n?' on':''}" data-x="edges" data-v="${n}">${n}</button>`).join('')}</div>`;
       if(w.cat==='D')h+=`<span class="f">${esc(L('ao_long')).toUpperCase()}</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${(w.ao||0)===n?' on':''}" data-x="ao" data-v="${n}">${n}</button>`).join('')}</div>`;
+      if(w.cat==='D'){h+=`<span class="f">W TRAKCIE</span><div class="chips">${DACTS.map(([a,em,xp])=>`<button class="chip${w.acts.includes(a)?' on':''}" data-x="dact" data-v="${a}">${em} ${esc(L('da_'+a))} <small>+${xp}</small></button>`).join('')}<button class="chip${w.fx.on?' on':''}" data-x="fxon">✊ ${esc(L('fx_in'))}</button></div>`;
+        if(w.fx.on){const F=fistState();h+=`<div class="card" style="margin-top:10px;background:linear-gradient(160deg,#3A2A1E,var(--card) 65%);border-color:#5A4030"><b style="font-size:13px">${sym('F','xs')} ${esc(alias('F'))} w tej sesji</b>
+          <span class="f">ETAP</span><div class="chips">${[1,2,3,4,5,6].map(n=>`<button class="chip${w.fx.stage===n?' on':''}" data-x="fxst" data-v="${n}">${esc(fsName(n))}${n>F.un?' 🔒':''}</button>`).join('')}</div>
+          <p class="hint" style="margin-top:6px">Odblokowany: ${esc(fsName(F.un))} · awans ${F.cnt}/3${F.inRest?` · przerwa do ${hm(F.restUntil)}`:''}</p>
+          <span class="f">ILE TRWAŁ</span><div class="chips">${[5,10,15,20,30,45,60].map(n=>`<button class="chip${w.fx.min===n?' on':''}" data-x="fxmin" data-v="${n}">${n} min</button>`).join('')}</div>
+          <span class="f">KOMFORT ${esc(alias('F'))}</span><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip${w.fx.comfort===n?' on':''}" data-x="fxcom" data-v="${n}">${n}</button>`).join('')}</div>
+          <span class="f">PRZYGOTOWANIE</span><div class="chips"><button class="chip${w.fx.warm?' on':''}" data-x="fxwarm">rozgrzewka</button><button class="chip${w.fx.glove?' on':''}" data-x="fxglove">rękawiczka</button></div></div>`;}}
       if(!isNew){const n=S.events.filter(e=>e.sessionId===w.id).length;h+=`<span class="f">ZDARZENIA ${alias('E')} W TRAKCIE</span><div class="chips"><span class="chip ro num">${n}</span><button class="chip" data-x="addev">+ dodaj</button></div>`;}
     }else{
       h+=`<h3>${sym('E','s')} ${isNew||opt.finish?'nowe zdarzenie':'zdarzenie'}</h3><label><span class="f">CZAS</span><input type="datetime-local" data-in="at" value="${toInput(w.at)}"></label>`;
@@ -1462,9 +1476,13 @@ function openEntry(k,id,opt={}){
     return h;
   };
   openSheet(draw,(x,v,redraw)=>{
-    if(x==='cat'){w.cat=v;w.itemId=null;redraw();}
+    if(x==='cat'){w.cat=v;w.itemId=null;if(v==='D'){w.used=[];w.acts=w.acts||[];w.fx=w.fx||{on:false,min:15,stage:null,comfort:null};}redraw();}
     else if(x==='item'){w.itemId=w.itemId===v?null:v;redraw();}
     else if(x==='ao'){w.ao=+v;redraw();}
+    else if(x==='dused'){const i=w.used.indexOf(v);if(i>=0)w.used.splice(i,1);else w.used.push(v);const its=w.used.map(id=>S.items.find(z=>z.id===id)).filter(Boolean).sort((a,b)=>(b.len||0)-(a.len||0));w.itemId=its.length?its[0].id:null;redraw();}
+    else if(x==='dact'){const i=w.acts.indexOf(v);if(i>=0)w.acts.splice(i,1);else w.acts.push(v);redraw();}
+    else if(x==='fxon'){w.fx.on=!w.fx.on;redraw();}else if(x==='fxst'){w.fx.stage=+v;redraw();}else if(x==='fxmin'){w.fx.min=+v;redraw();}
+    else if(x==='fxcom'){w.fx.comfort=w.fx.comfort===+v?null:+v;redraw();}else if(x==='fxwarm'){w.fx.warm=!w.fx.warm;redraw();}else if(x==='fxglove'){w.fx.glove=!w.fx.glove;redraw();}
     else if(x==='res'){w.res=v;redraw();}
     else if(/^e(meth|kind|inten|amt|dest|swm|item|lick)$/.test(x)){const T=k==='e'?w:(w.ev||(w.ev={}));
       if(x==='emeth')T.method=T.method===v?null:v;else if(x==='ekind')T.kind=v;else if(x==='einten')T.inten=T.inten===+v?null:+v;
@@ -1479,7 +1497,7 @@ function openEntry(k,id,opt={}){
     else if(x==='del'){
       if(!delArm){delArm=true;redraw();return;}
       const i=arr.findIndex(z=>z.id===w.id);if(i>=0)arr.splice(i,1);
-      if(k==='s')S.events.forEach(e=>{if(e.sessionId===w.id)e.sessionId=null;});
+      if(k==='s'){S.events.forEach(e=>{if(e.sessionId===w.id)e.sessionId=null;});for(let j=S.sessions.length-1;j>=0;j--)if(S.sessions[j].parent===w.id)S.sessions.splice(j,1);}
       save();closeSheet();render();toast('Usunięto');
     }
     else if(x==='save'){
@@ -1487,14 +1505,19 @@ function openEntry(k,id,opt={}){
       if(k==='s'){
         if(!w.start)return err('Podaj start');
         if(w.cat==='F'&&!w.stage)return err('Wybierz etap');
+        if(w.cat==='D'&&w.fx&&w.fx.on&&!w.fx.stage)return err('Wybierz etap '+alias('F'));
         if(w.end&&w.end<w.start)return err('Koniec jest przed startem');
         if(!w.end&&S.sessions.some(s=>s.id!==w.id&&s.cat===w.cat&&!s.end))return err('Ta kategoria już trwa — podaj koniec');
       }else if(!w.at)return err('Podaj czas');
       if(k==='e'&&w.sessionId){const s=S.sessions.find(z=>z.id===w.sessionId);if(!s||s.start>w.at||(s.end&&s.end<w.at))w.sessionId=null;}
       if(k==='e')applyDest(w);
-      const evd=w.ev;delete w.ev;
+      const evd=w.ev;delete w.ev;const fxd=w.fx;delete w.fx;if(w.cat!=='D'){delete w.used;delete w.acts;}
       if(isNew)arr.push(w);else Object.assign(o,w);
-      if(k==='s'){const ss=isNew?w:o;delete ss.ev;
+      if(k==='s'){const ss=isNew?w:o;delete ss.ev;delete ss.fx;
+        if(ss.cat==='D'){const ix=S.sessions.findIndex(z=>z.parent===ss.id&&z.cat==='F');
+          if(fxd&&fxd.on){const end=ss.end||Date.now(),len=Math.min(fxd.min*6e4,Math.max(6e4,end-ss.start));const f=ix>=0?S.sessions[ix]:{id:uid(),cat:'F',parent:ss.id,rating:null,note:''};
+            Object.assign(f,{start:end-len,end:ss.end?end:null,stage:fxd.stage,comfort:fxd.comfort,warm:!!fxd.warm,glove:!!fxd.glove});if(!ss.end)f.end=end;if(ix<0)S.sessions.push(f);}
+          else if(ix>=0)S.sessions.splice(ix,1);}
         if(ss.cat==='M'&&ss.end&&(ss.res==='E'||ss.res==='ruin')){let le=S.events.find(z=>z.sessionId===ss.id&&z.kind!=='milk');const fresh=!le,prev=status().streak;
           if(!le){le={id:uid(),at:ss.end,rating:null,sessionId:ss.id,tag:'',note:''};const ps=planState();if(ps.mode!=='off')le.plan=!!ps.allowed;S.events.push(le);}
           Object.assign(le,evd||{},{kind:ss.res==='ruin'?'ruined':'full'});applyDest(le);
