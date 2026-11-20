@@ -267,7 +267,8 @@ td.r,th.r{text-align:right}
 .btn .sym.gi{width:46px;height:46px;border-radius:13px}
 .active .sym.gi{width:34px;height:34px;border-radius:10px}
 .bdg .bi{display:block;width:64px;height:64px;margin:0 auto}.bdg .bi svg{width:100%;height:100%}
-.cimg{display:flex;justify-content:center;margin:6px 0 4px;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}.cimg svg{width:132px;height:132px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+.cimg{display:flex;justify-content:center;margin:6px 0 4px;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}.cimg img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}.shelf .bi img,.bdg .bi img{width:100%;height:100%;object-fit:contain}.sym.gi img{width:86%;height:86%;object-fit:contain}.flame img{width:68px;height:68px}
+.cimg svg{width:132px;height:132px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
 /* misc */
 #toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;max-width:90%;text-align:center;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -1398,7 +1399,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v25.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v26.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1724,7 +1725,7 @@ $('#impm').addEventListener('change',async ev=>{
     const pools={};let n=0;for(const [k,v] of Object.entries(pk.pools)){if(/^[a-z_0-9]{1,30}$/.test(k)&&Array.isArray(v)){pools[k]=v.filter(x=>typeof x==='string').map(x=>x.slice(0,500)).slice(0,200);n+=pools[k].length;}}
     const levels=Array.isArray(pk.levels)?pk.levels.filter(x=>typeof x==='string').map(x=>x.slice(0,40)).slice(0,100):undefined;
     const badges={};if(pk.badges&&typeof pk.badges==='object')for(const [k,v] of Object.entries(pk.badges))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')badges[k]=v.slice(0,40);
-    const icons={};let ni=0;if(pk.icons&&typeof pk.icons==='object')for(const [k,v] of Object.entries(pk.icons)){if(/^[a-z_0-9]{1,30}$/i.test(k)&&typeof v==='string'){const c=cleanSvg(v);if(c){icons[k]=c;ni++;}}}
+    const icons={};let ni=0;if(pk.icons&&typeof pk.icons==='object')for(const [k,v] of Object.entries(pk.icons)){if(/^[a-z_0-9]{1,30}$/i.test(k)&&typeof v==='string'){const c=/^data:image\/(webp|png|jpeg);base64,[A-Za-z0-9+\/=]{1,400000}$/.test(v)?`<img src="${v}" alt="" draggable="false">`:cleanSvg(v);if(c){icons[k]=c;ni++;}}}
     const labels={};if(pk.labels&&typeof pk.labels==='object')for(const [k,v] of Object.entries(pk.labels))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')labels[k]=v.slice(0,40);
     const mch={};if(pk.mch&&typeof pk.mch==='object')for(const [k,v] of Object.entries(pk.mch))if(/^[a-z_0-9]{1,20}$/.test(k)&&typeof v==='string')mch[k]=v.slice(0,40);
     S.msg={pools,levels,badges,icons:ni?icons:undefined,labels,mch};headMsg.key='';await save();render();toast(`Wczytano ${n} tekstów. Usuń teraz plik z telefonu.`);
