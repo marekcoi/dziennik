@@ -267,7 +267,8 @@ td.r,th.r{text-align:right}
 .btn .sym.gi{width:46px;height:46px;border-radius:13px}
 .active .sym.gi{width:34px;height:34px;border-radius:10px}
 .bdg .bi{display:block;width:64px;height:64px;margin:0 auto}.bdg .bi svg{width:100%;height:100%}
-.cimg{display:flex;justify-content:center;margin:6px 0 4px;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}.cimg img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}.shelf .bi img,.bdg .bi img{width:100%;height:100%;object-fit:contain}.sym.gi img{width:86%;height:86%;object-fit:contain}.flame img{width:68px;height:68px}
+.cimg{display:flex;justify-content:center;margin:6px 0 4px;animation:pop .55s cubic-bezier(.2,1.6,.4,1)}:where(img[src^="data:"]){width:100%;height:100%;object-fit:contain;display:block}.ei{display:inline-block;width:1.3em;height:1.3em;vertical-align:-.3em;line-height:0}.tab .ti .ei{width:28px;height:28px;vertical-align:middle}
+.cimg img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}.shelf .bi img,.bdg .bi img{width:100%;height:100%;object-fit:contain}.sym.gi img{width:86%;height:86%;object-fit:contain}.flame img{width:68px;height:68px}
 .cimg svg{width:132px;height:132px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
 /* misc */
 #toast{position:fixed;left:50%;bottom:calc(var(--sb) + 80px);transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:12px;font-size:13px;z-index:40;opacity:0;max-width:90%;text-align:center;transition:opacity .2s;pointer-events:none}
@@ -297,11 +298,11 @@ body.veil::after{content:'';position:fixed;inset:0;background:var(--bg);z-index:
 <div id="app" hidden>
   <main id="view"></main>
   <nav class="tab">
-    <button data-act="tab" data-tab="now"><i class="ti">🔥</i>Teraz</button>
-    <button data-act="tab" data-tab="hist"><i class="ti">🗓️</i>Historia</button>
-    <button data-act="tab" data-tab="stat"><i class="ti">📊</i>Statystyki</button>
-    <button data-act="tab" data-tab="items"><i class="ti">🍆</i>Przedmioty</button>
-    <button data-act="tab" data-tab="set"><i class="ti">⚙️</i>Ustawienia</button>
+    <button data-act="tab" data-tab="now"><i class="ti" data-e="🔥">🔥</i>Teraz</button>
+    <button data-act="tab" data-tab="hist"><i class="ti" data-e="🗓️">🗓️</i>Historia</button>
+    <button data-act="tab" data-tab="stat"><i class="ti" data-e="📊">📊</i>Statystyki</button>
+    <button data-act="tab" data-tab="items"><i class="ti" data-e="🍆">🍆</i>Przedmioty</button>
+    <button data-act="tab" data-tab="set"><i class="ti" data-e="⚙️">⚙️</i>Ustawienia</button>
   </nav>
 </div>
 
@@ -363,11 +364,19 @@ const dActXP=s=>(s.acts||[]).reduce((a,k)=>a+((DACTS.find(d=>d[0]===k)||[])[2]||
 const L=k=>(S&&S.msg&&S.msg.labels&&S.msg.labels[k])||LBL[k]||k;
 const gfxOn=()=>!!(S&&S.settings.gfx!==false&&!S.settings.discreet&&S.msg&&S.msg.icons);
 const icon=n=>gfxOn()&&S.msg.icons[n]?S.msg.icons[n]:'';
+const EMAP={'🔥':'cel_streak','✊':'cat_F','✋':'cat_M','🍆':'cat_D','🍑':'cat_P','💍':'cat_R','⭕':'cat_R','🔒':'ic_lock','🏆':'cel_trophy','💀':'cel_skull','☠':'cel_skull','🎲':'cel_dice','🪜':'cel_ladder','🌙':'cel_night','❄':'ic_snow','🧊':'cel_freeze','🎄':'cel_gift','🔓':'cel_unlock','💤':'ic_rest','🛌':'ic_rest','🫁':'ic_relax','💡':'ic_tip','🎯':'ic_target','⏱':'ic_time','⏳':'ic_time','📈':'ic_up','💧':'ic_drop','💦':'cat_E','🔌':'ic_cork','💎':'ic_gem','🚀':'ic_rocket','⭐':'ic_star','🌟':'ic_star','🙌':'ic_hf','🍾':'cel_ejac','🎉':'cel_ejac','🗓':'ic_cal','📅':'ic_cal','📆':'ic_cal','📊':'ic_chart','⚙':'ic_gear','🎁':'cel_gift','🏅':'cel_trophy','🍌':'cat_M','👑':'ic_crown','🪐':'ic_rocket','⚡':'cel_ch','💫':'ic_star','🌠':'ic_star'};
+const EMRE=new RegExp('('+Object.keys(EMAP).join('|')+')\uFE0F?','g');let emoBusy=false;
+function emojify(root){if(!S||!gfxOn()||!S.msg||!S.msg.icons)return;const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentElement;if(!p||p.closest('option,select,textarea,input,canvas,[data-noei],script,style'))return NodeFilter.FILTER_REJECT;EMRE.lastIndex=0;return EMRE.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}});
+  const list=[];while(tw.nextNode())list.push(tw.currentNode);
+  for(const n of list){EMRE.lastIndex=0;const t=n.nodeValue;let last=0,m,frag=document.createDocumentFragment(),hit=false;
+    while((m=EMRE.exec(t))){const ic=S.msg.icons[EMAP[m[1]]];if(!ic)continue;hit=true;frag.append(t.slice(last,m.index));const sp=document.createElement('span');sp.className='ei';sp.innerHTML=ic;frag.append(sp);last=m.index+m[0].length;}
+    if(hit){frag.append(t.slice(last));n.replaceWith(frag);}}}
+new MutationObserver(()=>{if(emoBusy)return;emoBusy=true;requestAnimationFrame(()=>{try{emojify(document.body);}finally{emoBusy=false;}});}).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
 function levelMedal(L){const h=(r,cy)=>Array.from({length:6},(_,i)=>{const a=(i*60-90)*Math.PI/180;return (50+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1);}).join(' ');
   return `<svg viewBox="0 0 100 100"><defs><linearGradient id="lma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E3D6FF"/><stop offset="1" stop-color="#3E3290"/></linearGradient><linearGradient id="lmb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C3A6FF"/><stop offset="1" stop-color="#5A4BC0"/></linearGradient></defs><polygon points="${h(44,51)}" fill="url(#lma)" stroke="url(#lma)" stroke-width="8" stroke-linejoin="round"/><polygon points="${h(36,51)}" fill="url(#lmb)" stroke="url(#lmb)" stroke-width="6" stroke-linejoin="round"/><ellipse cx="42" cy="26" rx="20" ry="8" fill="#fff" opacity=".18"/><text x="50" y="${L>99?62:65}" text-anchor="middle" font-size="${L>99?28:38}" font-weight="800" fill="#fff" font-family="-apple-system,system-ui,sans-serif">${L}</text></svg>`;}
 const EMOS={M:['✋','🔥','🎯','🌀','⏳'],K:['🔒','⛓️','🗝️','🐓','🧊'],R:['⭕','💍','🔒','⛓️','🎀'],P:['🔌','🍑','💎','🎈','🌰'],D:['🍆','🚀','🦄','🌶️','🍌'],F:['✊','🤜','🖐️','💪','🥊'],E:['💦','🎉','🌋','🥛','🍾']};
 function oneEmoji(v){v=String(v||'').trim();if(!v)return '';try{if(Intl.Segmenter){const it=new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(v)[Symbol.iterator]().next();return it.value?it.value.segment:'';}}catch(e){}return Array.from(v).slice(0,2).join('');}
-function sym(c,cls=''){const k=S.cats[c],ic=icon('cat_'+c);if(k.emoji)return `<span class="sym em ${cls}" style="background:${k.color}">${esc(k.emoji)}</span>`;if(ic)return `<span class="sym gi ${cls}" style="background:${k.color}">${ic}</span>`;return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
+function sym(c,cls=''){const k=S.cats[c],ic=icon('cat_'+c);if(ic)return `<span class="sym gi ${cls}" style="background:${k.color}">${ic}</span>`;if(k.emoji)return `<span class="sym em ${cls}" style="background:${k.color}">${esc(k.emoji)}</span>`;if(ic)return `<span class="sym gi ${cls}" style="background:${k.color}">${ic}</span>`;return `<span class="sym ${cls}" style="background:${k.color};color:${txtOn(k.color)}">${esc((k.alias||c).slice(0,2))}</span>`;}
 const alias=c=>esc(S.cats[c].alias||c);
 const realE=()=>S.events.filter(e=>e.kind!=='milk');
 const itemName=id=>(S.items.find(i=>i.id===id)||{}).alias||'';
@@ -472,6 +481,7 @@ window.addEventListener('unhandledrejection',ev=>showErr('async',ev.reason));
 let _gc=null,_gk='';
 function render(){applyTheme();_gc=null;
   document.querySelectorAll('.tab button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  document.querySelectorAll('.tab .ti').forEach(i=>{i.textContent=i.dataset.e;});
   try{({now:renderNow,hist:renderHist,stat:renderStats,items:renderItems,set:renderSet})[tab]();}
   catch(e){showErr('widok '+tab,e);$('#view').innerHTML=`<div class="hdr"><b>Ups</b></div><div class="card">Ten widok się nie wczytał. Treść błędu jest na górze ekranu.</div>`;}
 }
@@ -1366,7 +1376,7 @@ function renderSet(){
   h+=`<div class="setrow"><label class="grow">kategoria ${alias('K')} (np. klatka)<select data-set="kon"><option value="0"${S.cats.K.on?'':' selected'}>ukryta</option><option value="1"${S.cats.K.on?' selected':''}>aktywna</option></select></label></div>`;
   for(const c of CATS.filter(catOn)){const k=S.cats[c];
     h+=`<div class="setrow">${sym(c)}<label class="grow">nazwa<input type="text" maxlength="12" value="${esc(k.alias)}" data-set="alias" data-cat="${c}"></label><label>kolor<input type="color" value="${k.color}" data-set="color" data-cat="${c}"></label>${c!=='E'?`<label style="width:84px">próg (min)<input type="number" inputmode="numeric" min="0" value="${k.limit||''}" placeholder="brak" data-set="limit" data-cat="${c}"></label>`:'<span style="width:84px"></span>'}</div>
-    <div class="emo">${[...(EMOS[c]||[])].filter(x=>x.trim()).map(e=>`<button data-act="emo" data-cat="${c}" data-v="${e}" class="${k.emoji===e?'on':''}">${e}</button>`).join('')}<input type="text" maxlength="8" placeholder="inna" value="${esc(k.emoji||'')}" data-set="emoji" data-cat="${c}"><button data-act="emo" data-cat="${c}" data-v="" title="usuń">✕</button></div>`;}
+    <div class="emo" data-noei>${[...(EMOS[c]||[])].filter(x=>x.trim()).map(e=>`<button data-act="emo" data-cat="${c}" data-v="${e}" class="${k.emoji===e?'on':''}">${e}</button>`).join('')}<input type="text" maxlength="8" placeholder="inna" value="${esc(k.emoji||'')}" data-set="emoji" data-cat="${c}"><button data-act="emo" data-cat="${c}" data-v="" title="usuń">✕</button></div>`;}
   h+=`<div class="info">Emotka zastępuje litery w ikonach (pierwszeństwo przed grafikami z pakietu). Bez emotki pokazywane są 2 pierwsze znaki nazwy. Próg jest wyłącznie wizualny (pasek na ekranie Teraz); puste = brak.</div></div>`;
   h+=`<div class="sec">Bezpieczeństwo</div><div class="card"><div class="setrow"><label class="grow">automatyczna blokada po wyjściu<select data-set="autolock">${[[0,'od razu'],[60,'po 1 min'],[300,'po 5 min'],[900,'po 15 min']].map(([v,l])=>`<option value="${v}"${S.settings.autolock===v?' selected':''}>${l}</option>`).join('')}</select></label></div>
   <div class="setrow"><label class="grow">usuń dane po błędnych PIN-ach<select data-set="wipe">${[[0,'nigdy'],[5,'5 próbach'],[10,'10 próbach'],[20,'20 próbach']].map(([v,l])=>`<option value="${v}"${(META.wipe||0)===v?' selected':''}>${l}</option>`).join('')}</select></label></div></div>`;
@@ -1399,7 +1409,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v26.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v28.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
