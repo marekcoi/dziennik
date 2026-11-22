@@ -668,9 +668,14 @@ const GOALS={
   M:[['mnoe',[15,20,30,45,60]],['edges',[3,5,8,10]],['ruin',[1]]],
   R:[['time',[30,60,120,240]]],
   K:[['time',[120,360,720,1440,2880]]]};
-function goalLab(t,n){return t==='time'?dur(n*6e4):t==='night'?'przez noc (2–5)':t==='edges'?`${L('edge')} ×${n}`:t==='ao'?`${L('ao')} ×${n}`:t==='stage'?`etap: ${fsName(n)}`:t==='warm'?'z rozgrzewką':t==='mnoe'?`${dur(n*6e4)} bez ${alias('E')}`:t==='ruin'?`zakończ: ${L('k_ruined')}`:'';}
+function goalLab(t,n){return t==='time'?dur(n*6e4):t==='night'?(n>1?`${n}. noc z rzędu`:'przez noc (2–5)'):t==='edges'?`${L('edge')} ×${n}`:t==='ao'?`${L('ao')} ×${n}`:t==='stage'?`etap: ${fsName(n)}`:t==='warm'?'z rozgrzewką':t==='mnoe'?`${dur(n*6e4)} bez ${alias('E')}`:t==='ruin'?`zakończ: ${L('k_ruined')}`:'';}
 function goalXPv(t,n){return t==='time'?15+Math.floor(n/10):t==='night'?60:t==='edges'?15+3*n:t==='ao'?40*n:t==='stage'?60:t==='warm'?25:t==='mnoe'?15+Math.floor(n/5):t==='ruin'?30:0;}
-function goalDone(s){const g=s.goal;if(!g)return false;const n=g.n;return g.t==='night'?nightsOf(s).length>0:g.t==='edges'?(s.edges||0)>=n:g.t==='ao'?(s.ao||0)>=n:g.t==='stage'?(s.stage||0)>=n:g.t==='warm'?!!s.warm:g.t==='mnoe'?s.res==='none'&&wearMs(s)>=n*6e4:g.t==='ruin'?s.res==='ruin':false;}
+const tgtXP=n=>15+Math.floor(n/10);
+function curGoalDone(s){return s.target?wearMs(s)>=s.target*6e4:s.goal?goalDone(s):false;}
+function curGoalLab(s){return s.target?goalLab('time',s.target):s.goal?goalLab(s.goal.t,s.goal.n):'';}
+function curGoalXP(s){return s.target?tgtXP(s.target):s.goal?goalXPv(s.goal.t,s.goal.n):0;}
+function archiveGoal(s){if(!curGoalDone(s))return;(s.goalsDone=s.goalsDone||[]).push(s.target?{t:'time',n:s.target,at:Date.now()}:{t:s.goal.t,n:s.goal.n,at:Date.now()});s.target=null;s.goal=null;}
+function goalDone(s){const g=s.goal;if(!g)return false;const n=g.n;return g.t==='night'?nightsOf(s).length>=(n||1):g.t==='edges'?(s.edges||0)>=n:g.t==='ao'?(s.ao||0)>=n:g.t==='stage'?(s.stage||0)>=n:g.t==='warm'?!!s.warm:g.t==='mnoe'?s.res==='none'&&wearMs(s)>=n*6e4:g.t==='ruin'?s.res==='ruin':false;}
 function quickEjac(){
   const now=Date.now(),act=S.sessions.filter(s=>!s.end&&s.cat!=='E');
   const w={kind:'full',method:'hand',ctx:(act.find(s=>s.cat==='M')||{}).id||'M',dur:10,edges:0};
@@ -703,7 +708,9 @@ function startEjac(extra){const prev=status().streak,ps=planState();const e=Obje
   if(ps.mode!=='off')e.plan=!!ps.allowed;S.events.push(e);S.seen.ms='';headMsg.key='';save();render();
   ejacCeleb(e,prev,()=>openEntry('e',e.id,{finish:true}));}
 function afterFinish2(s){
-  if(s.goal&&goalDone(s))toast(`🎯 Cel zaliczony: ${goalLab(s.goal.t,s.goal.n)} · +${goalXPv(s.goal.t,s.goal.n)} XP`);
+  if(s.via){const pv=S.sessions.find(z=>z.id===s.via);if(pv&&!pv.end&&pv.pauseAt)setTimeout(()=>toast(`⏸ ${itemName(pv.itemId)||alias('P')} czeka — wznów na karcie`),1800);}
+  if((s.goalsDone||[]).length)toast(`🎯 Zaliczone cele w sesji: ${s.goalsDone.length+(curGoalDone(s)?1:0)}`);
+  else if(s.goal&&goalDone(s))toast(`🎯 Cel zaliczony: ${goalLab(s.goal.t,s.goal.n)} · +${goalXPv(s.goal.t,s.goal.n)} XP`);
   const then=()=>effectsChain(efDue(),()=>celebrate());
   if(s.cat==='M'&&s.res!=='none')return then();
   const pr=praiseFor(s);if(!pr)return then();
@@ -1024,7 +1031,8 @@ function computeGame0(now=Date.now()){
     else if(s.cat==='R'){r++;add(s.start,XPV.R+Math.min(10,Math.floor(h*4)),'R');}
     else if(s.cat==='K'&&s.end){kN++;kH+=h;kMax=Math.max(kMax,h);add(s.start,10+Math.min(20,Math.floor(h)),'K');}
     if(s.target&&s.end&&wearMs(s)>=s.target*6e4){targets++;add(s.end,15+Math.floor(s.target/10),'target');}
-    else if(s.goal&&s.end&&goalDone(s)){targets++;add(s.end,goalXPv(s.goal.t,s.goal.n),'target');}}
+    else if(s.goal&&s.end&&goalDone(s)){targets++;add(s.end,goalXPv(s.goal.t,s.goal.n),'target');}
+    for(const gd of (s.goalsDone||[])){targets++;add(gd.at||s.end||s.start,gd.t==='time'?tgtXP(gd.n):goalXPv(gd.t,gd.n),'target');}}
   for(const n of nights)add(n+6*36e5,XPV.night,'night');
   let sw=0,ePlan=0,hf=0,ruin=0,milk=0,plugN=0,cer=0,swRun=0,swBest=0;const toyX=new Set(),EA=[...S.events].sort((a,b)=>a.at-b.at),E=EA.filter(e=>e.kind!=='milk');
   let prevRE=null;
@@ -1240,12 +1248,13 @@ function renderNow(){
     if((s.cat==='D'||s.cat==='F')&&S.settings.msgs&&S.msg){const pp=(S.msg.pools.tip_pre||[]);if(pp.length){const ix=[...s.id].reduce((a,ch)=>a+ch.charCodeAt(0),0)%pp.length;h+=`<div class="ptip${S.settings.discreet?' blur':''}" data-act="reveal">💡 ${esc(pp[ix])}</div>`;}}
     if(s.target)h+=`<div class="bar tbar"><i data-tbar="${s.start+pauseTotal(s)}" data-tgt="${s.target}" data-sid="${s.id}"></i></div><div class="meta"><span data-tlbl="${s.start+pauseTotal(s)}" data-tgt="${s.target}"></span><span class="num">cel ${dur(s.target*60000)}</span></div>`;
     {const pr=records(s.id)[sessRecKey(s)];if(pr)h+=`<div class="meta"><span data-rec="${s.start+pauseTotal(s)}" data-recv="${pr.v}" data-sid="${s.id}"${s.pauseAt?' data-frozen="1"':''}></span><span class="num">🏆 ${dur(pr.v)}</span></div>`;}
-    h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div><div class="tgt"><button data-act="tgt" data-id="${s.id}">🎯 ${s.target?'cel: '+dur(s.target*6e4):s.goal?'cel: '+esc(goalLab(s.goal.t,s.goal.n)):'ustaw cel'}</button>${s.cat==='P'||s.cat==='K'?(s.pauseAt?`<button data-act="resume" data-id="${s.id}" style="background:linear-gradient(160deg,#FFB35C,#FF7A2F);color:#2a1a08;font-weight:700">▶ wznów · <span class="num" data-pause="${s.pauseAt}">${hms(Date.now()-s.pauseAt)}</span></button>`:`<button data-act="pause" data-id="${s.id}">⏸ przerwa</button>`):''}${s.pauses&&s.pauses.length?`<span style="font-size:11px;color:var(--tx3)">przerwy: ${s.pauses.length}</span>`:''}</div></div>`;
+    if(s.via){const pv=S.sessions.find(z=>z.id===s.via);if(pv&&!pv.end)h+=`<div class="meta"><span>⏸ w przerwie: ${esc(itemName(pv.itemId)||alias('P'))}</span></div>`;}
+    h+=`<div class="meta"><span>od ${rel(s.start)}</span><span>${esc(it)}</span></div><div class="tgt"><button data-act="tgt" data-id="${s.id}">🎯 ${curGoalDone(s)?'✓ ustaw kolejny cel':s.target?'cel: '+dur(s.target*6e4):s.goal?'cel: '+esc(goalLab(s.goal.t,s.goal.n)):'ustaw cel'}${(s.goalsDone||[]).length?` · ✓${s.goalsDone.length}`:''}</button>${s.cat==='P'&&s.pauseAt&&!act.some(z=>z.via===s.id)?`<button data-act="par" data-id="${s.id}">＋ inny korek</button>`:''}${s.cat==='P'||s.cat==='K'?(s.pauseAt?`<button data-act="resume" data-id="${s.id}" style="background:linear-gradient(160deg,#FFB35C,#FF7A2F);color:#2a1a08;font-weight:700">▶ wznów · <span class="num" data-pause="${s.pauseAt}">${hms(Date.now()-s.pauseAt)}</span></button>`:`<button data-act="pause" data-id="${s.id}">⏸ przerwa</button>`):''}${s.pauses&&s.pauses.length?`<span style="font-size:11px;color:var(--tx3)">przerwy: ${s.pauses.length}</span>`:''}</div></div>`;
   }
   h+=todayCard(g)+tipCard()+seasonCard(g)+monthCard(g);
   h+='<div class="grid">';
   for(const c of CATS.filter(catOn)){
-    const a=act.find(s=>s.cat===c);
+    const a=act.find(s=>s.cat===c&&!s.pauseAt)||act.find(s=>s.cat===c);
     const sub=c==='E'?'zapisz teraz':a?'trwa · zakończ':'start';
     const cc=S.cats[c].color;h+=`<button class="btn${a?' on':''}" style="background:linear-gradient(160deg,${cc}${a?'55':'30'},var(--card) 70%);border-color:${cc}${a?'aa':'50'}" data-act="${c==='E'?'event':a?'stop':'start'}" data-cat="${c}"${a?` data-id="${a.id}"`:''}>${sym(c)}<small>${sub}</small></button>`;
   }
@@ -1262,7 +1271,8 @@ function updateLive(){
     if(e<R)el.innerHTML=`do rekordu <b class="num">${hms(R-e)}</b>`;else{el.innerHTML='<b style="color:#FFD86B">🔥 bijesz rekord!</b>';if(!recSeen.has(el.dataset.sid)){recSeen.add(el.dataset.sid);if(e-R<5000)toast('🏆 Nowy rekord w trakcie!');}}});
   document.querySelectorAll('[data-bar]').forEach(el=>{const e=now-+el.dataset.bar,L=+el.dataset.lim*60000;el.style.width=Math.min(100,e/L*100)+'%';el.classList.toggle('over',e>L);});
   document.querySelectorAll('[data-tbar]').forEach(el=>{const e=now-+el.dataset.tbar,T=+el.dataset.tgt*60000;el.style.width=Math.min(100,e/T*100)+'%';
-    if(e>=T&&!tgtSeen.has(el.dataset.sid)){tgtSeen.add(el.dataset.sid);if(Date.now()-+el.dataset.tbar-T<5000){toast('🎯 Cel osiągnięty!');confetti();}}});
+    if(e>=T&&!tgtSeen.has(el.dataset.sid)){tgtSeen.add(el.dataset.sid);if(Date.now()-+el.dataset.tbar-T<5000){confetti();if(document.getElementById('sheet').hidden)ACT.goalnext({id:el.dataset.sid});else toast('🎯 Cel osiągnięty!');}}});
+  for(const s of S.sessions)if(!s.end&&s.goal&&s.goal.t==='night'&&!tgtSeen.has(s.id)&&goalDone(s)){tgtSeen.add(s.id);if(document.getElementById('sheet').hidden){confetti();ACT.goalnext({id:s.id});}break;}
   document.querySelectorAll('[data-tlbl]').forEach(el=>{const e=now-+el.dataset.tlbl,T=+el.dataset.tgt*60000;el.innerHTML=e<T?`do celu <b class="num">${hms(T-e)}</b>`:'<b style="color:#7FAE8E">✓ cel osiągnięty</b>';});
   document.querySelectorAll('[data-barlbl]').forEach(el=>{const e=now-+el.dataset.barlbl,L=+el.dataset.lim*60000;el.innerHTML=e<L?`do progu <b class="num">${hms(L-e)}</b>`:`<b class="warn num">ponad próg o ${hms(e-L)}</b>`;el.closest('.active').classList.toggle('over',e>L);});
 }
@@ -1459,7 +1469,7 @@ function renderSet(){
   h+=`<div class="sec">Dostęp</div><button class="setbtn" data-act="lock">Zablokuj teraz</button><button class="setbtn" data-act="chpin">Zmień PIN</button>${META.wFace?'<button class="setbtn" data-act="faceOff">🙂 Wyłącz Face ID</button>':'<button class="setbtn" data-act="faceOn">🙂 Włącz Face ID</button>'}<div class="info" style="margin:-2px 0 10px">Face ID tworzy klucz dostępu „dziennik” w aplikacji Hasła (iOS 18+). PIN działa zawsze jako zapasowy; licznik błędnych prób dotyczy tylko PIN-u.</div>`;
   h+=`<div class="sec">Kopia zapasowa</div><button class="setbtn" data-act="exp">Eksportuj zaszyfrowaną kopię</button><button class="setbtn" data-act="imp">Importuj kopię</button>`;
   h+=`<div class="sec">Strefa ryzyka</div><button class="setbtn danger" data-act="wipeAll">Usuń wszystkie dane</button>`;
-  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v30.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
+  h+=`<div class="info">Dane są tylko na tym urządzeniu, zaszyfrowane AES-256-GCM kluczem z PIN-u (PBKDF2, ${ITER.toLocaleString('pl-PL')} iteracji). Aplikacja nie ma dostępu do sieci. Wersja: v32.<br>Sesji: ${S.sessions.length} · zdarzeń: ${S.events.length} · przedmiotów: ${S.items.length}</div>`;
   $('#view').innerHTML=h;
 }
 
@@ -1683,11 +1693,22 @@ const ACT={
   draw(){const P=S.plan;const yes=Math.random()*100<P.p;S.draws=S.draws||{};S.draws[dayKey(Date.now())]=yes;headMsg.key='';save();render();if(yes)confetti();
     showCard({big:yes?'🎲 TAK':'🎲 NIE',num:true,sub:yes?'Dziś wolno — podwójne XP za '+alias('E'):'Dziś nie. Cała energia gdzie indziej.',text:S.settings.msgs?pick(yes?'draw_yes':'draw_no',{}):''},()=>render());},
   tgt(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;const G=GOALS[s.cat]||GOALS.R,F=s.cat==='F'?fistState():null;
-    const cur=s.target?'time:'+s.target:s.goal?s.goal.t+':'+s.goal.n:'';
-    openSheet(()=>`<div class="grab"></div><h3>${sym(s.cat,'s')} Cel sesji</h3><p class="sub2">Cele dopasowane do aktywności. Przy każdym widać nagrodę XP.</p>
-      ${G.map(([t,ns])=>`<span class="f">${{time:'CZAS',night:'NOC',edges:L('edge').toUpperCase(),ao:L('ao_long').toUpperCase(),stage:'ETAP',warm:'PRZYGOTOWANIE',mnoe:'KONTROLA',ruin:'FINAŁ'}[t]}</span><div class="chips">${ns.map(n0=>{const n=t==='stage'?F.un:n0,key=t+':'+n;return `<button class="chip${cur===key?' on':''}" data-x="g" data-v="${key}">${esc(goalLab(t,n))} · +${goalXPv(t,n)}</button>`;}).join('')}</div>`).join('')}
+    const done=curGoalDone(s),el=Math.ceil(wearMs(s)/6e4);const cur=done?'':s.target?'time:'+s.target:s.goal?s.goal.t+':'+s.goal.n:'';const nd=(s.goalsDone||[]).length;
+    openSheet(()=>`<div class="grab"></div><h3>${sym(s.cat,'s')} Cel sesji</h3>${done?`<div class="card" style="border-color:#7FAE8E;margin:6px 0"><b style="color:#7FAE8E">✓ Zaliczone: ${esc(curGoalLab(s))} · +${curGoalXP(s)} XP</b><p class="hint" style="margin:4px 0 0">XP zostaje. Wybierz kolejny cel.</p></div>`:`<p class="sub2">Cele dopasowane do aktywności. Przy każdym widać nagrodę XP.</p>`}${nd?`<p class="hint">W tej sesji zaliczone cele: ${nd+(done?1:0)}</p>`:''}
+      ${G.map(([t,ns])=>{if(t==='night'&&!s.end){const nn=nightsOf(s).length,big=s.cat==='P'&&isBig(s);return [t,big&&nn>=1?[]:[nn+1]];}return [t,t==='time'&&!s.end?ns.filter(n=>n>el):ns];}).filter(([t,ns])=>ns.length).map(([t,ns])=>`<span class="f">${{time:'CZAS',night:'NOC',edges:L('edge').toUpperCase(),ao:L('ao_long').toUpperCase(),stage:'ETAP',warm:'PRZYGOTOWANIE',mnoe:'KONTROLA',ruin:'FINAŁ'}[t]}</span><div class="chips">${ns.map(n0=>{const n=t==='stage'?F.un:n0,key=t+':'+n;return `<button class="chip${cur===key?' on':''}" data-x="g" data-v="${key}">${esc(goalLab(t,n))} · +${goalXPv(t,n)}</button>`;}).join('')}</div>`).join('')}
       <div class="row2"><button class="link danger" data-x="g" data-v="">usuń cel</button><button class="link" data-x="close">Anuluj</button></div>`,
-    (x,v)=>{if(x==='g'){s.target=null;s.goal=null;if(v){const [t,n]=v.split(':');if(t==='time')s.target=+n;else s.goal={t,n:+n};}tgtSeen.delete(s.id);save();}closeSheet();render();});},
+    (x,v)=>{if(x==='g'){archiveGoal(s);s.target=null;s.goal=null;if(v){const [t,n]=v.split(':');if(t==='time')s.target=+n;else s.goal={t,n:+n};}tgtSeen.delete(s.id);save();}closeSheet();render();});},
+  goalnext(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;const base=s.target||Math.ceil(wearMs(s)/6e4/15)*15;
+    openSheet(()=>`<div class="grab"></div><h3>🎯 Cel osiągnięty!</h3><p class="sub2">${esc(curGoalLab(s))} · +${curGoalXP(s)} XP zaliczone. Idziesz dalej?</p>
+      ${s.goal&&s.goal.t==='night'&&!(s.cat==='P'&&isBig(s))?`<div class="chips"><button class="chip on" data-x="night">🌙 ${esc(goalLab('night',nightsOf(s).length+1))} · +${goalXPv('night',1)} XP</button></div><span class="f">ALBO CZAS</span>`:''}
+      <div class="chips">${[15,30,60,120].map(n=>`<button class="chip" data-x="add" data-v="${n}">+${dur(n*6e4)} · +${tgtXP(base+n)} XP</button>`).join('')}</div>
+      <div class="row2"><button class="link" data-x="more">inny cel…</button><button class="link" data-x="close">Nie teraz</button></div>`,
+    (x,v)=>{if(x==='night'){const nn=nightsOf(s).length+1;archiveGoal(s);s.goal={t:'night',n:nn};tgtSeen.delete(s.id);save();closeSheet();render();toast('🌙 Nowy cel: '+goalLab('night',nn));}else if(x==='add'){archiveGoal(s);s.target=base+(+v);tgtSeen.delete(s.id);save();closeSheet();render();toast('🎯 Nowy cel: '+dur(s.target*6e4));}else if(x==='more'){closeSheet();ACT.tgt(d);}else closeSheet();});},
+  par(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;const its=S.items.filter(i=>i.cat==='P'&&!i.planned&&i.id!==s.itemId).sort((a,b)=>(b.big?1:0)-(a.big?1:0)||(b.dia||0)-(a.dia||0));
+    openSheet(()=>`<div class="grab"></div><h3>${sym('P','s')} Inny korek w przerwie</h3><p class="sub2">${esc(itemName(s.itemId)||alias('P'))} stoi na pauzie. Nowa sesja liczy się osobno, a po niej wznowisz poprzednią.</p>
+      <div class="chips">${its.map(i=>`<button class="chip" data-x="pick" data-v="${i.id}">${i.big?'💎 ':''}${esc(i.alias)}</button>`).join('')||'<span class="hint">Brak innych korków w Przedmiotach</span>'}</div>
+      <div class="row2"><button class="link" data-x="close">Anuluj</button></div>`,
+    (x,v)=>{if(x==='pick'){S.sessions.push({id:uid(),cat:'P',start:Date.now(),end:null,itemId:v,rating:null,note:'',via:s.id});save();closeSheet();render();toast(`▶ ${itemName(v)} — start`);celebrate();}else closeSheet();});},
   tgtOld(d){const s=S.sessions.find(x=>x.id===d.id);if(!s)return;const opts=[0,15,30,45,60,90,120,180,240,360,480];
     openSheet(()=>`<div class="grab"></div><h3>Cel czasu sesji</h3><p class="sub2">Za osiągnięcie celu: +15 XP + 1 XP za każde 10 min celu.</p><div class="chips" style="margin-top:12px">${opts.map(o=>`<button class="chip${(s.target||0)===o?' on':''}" data-x="t" data-v="${o}">${o?dur(o*60000):'brak'}</button>`).join('')}</div><div class="row2"><span></span><button class="link" data-x="close">Anuluj</button></div>`,
     (x,v)=>{if(x==='t'){s.target=+v||null;tgtSeen.delete(s.id);save();}closeSheet();render();});},
